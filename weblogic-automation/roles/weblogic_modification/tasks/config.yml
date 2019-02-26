@@ -1,0 +1,4 @@
+
+  - name: Config {{ weblogic_domain_name }} domain
+    command: "{{ staging_folder.domain }}/{{ weblogic_automata_binary }} config {{ staging_folder.domain }}/{{ weblogic_domain_name }}.json"
+

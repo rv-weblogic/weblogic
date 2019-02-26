@@ -1,0 +1,20 @@
+---
+- name: Disable SE-LINUX
+  selinux: state=disabled
+  ignore_errors: true
+  
+- name: Write hostname and IP address to hosts file
+  lineinfile: path=/etc/hosts line='{{ip_addr_only}} {{host_name}} {{host_name}}'
+  ignore_errors: true
+  
+- include_tasks: storage.yml
+  when: create_lvm | default(False) == True or
+        create_full_filesystem | default(False) == True 
+
+- include_tasks: user.yml
+  when: app_user_create | default(False) == True
+             
+- include_tasks: yum.yml
+  when: download_library_yum_7 | default(False) == True or
+        download_library_yum_6 | default(False) == True
+  

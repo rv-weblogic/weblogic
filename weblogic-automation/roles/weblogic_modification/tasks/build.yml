@@ -1,0 +1,5 @@
+
+  - name: Build {{ weblogic_domain_name }} domain
+    command: "{{ staging_folder.domain }}/{{ weblogic_automata_binary }} build {{ staging_folder.domain }}/{{ weblogic_domain_name }}.json"
+    args:
+        creates: "{{ domain_config_xml }}"

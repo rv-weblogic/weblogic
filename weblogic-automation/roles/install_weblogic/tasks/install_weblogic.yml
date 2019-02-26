@@ -1,0 +1,37 @@
+  - name: Create staging directory 
+    file: 
+        state: directory 
+        path: "{{ staging_folder.weblogic }}"
+
+  - name: Download Weblogic installer to staging directory
+    get_url: 
+        url: "{{ weblogic_package.url }}"
+        dest: "{{ staging_folder.weblogic }}"
+        checksum: "{{ weblogic_package.cksum_type }}:{{ weblogic_package.cksum_value }}"
+
+  - name: Copy Weblogic response file
+    template: 
+        src: "{{ weblogic_install.oracle_response }}.j2"
+        dest: "{{ weblogic_account.home }}/{{ weblogic_install.oracle_response }}"
+        
+  - name: Copy oraInst.loc
+    template: 
+        src: "{{ weblogic_install.oracle_oraInst }}.j2"
+        dest: "{{ weblogic_account.home }}/{{ weblogic_install.oracle_oraInst }}"
+        
+  - name: Execute Weblogic silent installer
+    command: "{{ jdk_install.symlink }}/bin/java -Xms1024m -Xmx1024m -jar {{ staging_folder.weblogic }}/{{ weblogic_package.name }} -silent -responseFile {{ weblogic_account.home }}/{{ weblogic_install.oracle_response }} -invPtrLoc {{ weblogic_account.home }}/{{ weblogic_install.oracle_oraInst }}"
+    args:
+        creates: "{{ weblogic_install.oracle_home }}/wlserver/server/lib/weblogic.jar"
+        
+  - name: Create "{{ weblogic_install.domains }}" directory
+    file:
+        path: "{{ weblogic_install.domains }}"
+        state: directory
+        mode: 0770
+        
+  - name: Create"{{ weblogic_install.domains }}" directorry
+    file:
+        path: "{{ weblogic_install.oracle_home }}/logs"
+        state: directory
+        mode: 0770

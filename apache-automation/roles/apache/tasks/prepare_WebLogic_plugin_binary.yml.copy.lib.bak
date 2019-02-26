@@ -1,0 +1,16 @@
+
+- name: copy WebLogic Plugin Lib files
+  copy:
+    src: "{{ source_location_WL_Plugin_Lib }}"
+    dest: "{{ dest_location_WL_Plugin_Lib }}"
+
+###ccc may need to use another module instead of lineinfile (replace instead of add)    
+- name: add export LD_LIBRARY_PATH=/opt/wlplugin/lib to .bash_profile
+  lineinfile: 
+    path: ~/.bash_profile
+    line: 'export LD_LIBRARY_PATH={{ dest_location_WL_Plugin_Lib }}'
+  
+- name: add export LD_LIBRARY_PATH=/opt/wlplugin/lib to .bashrc
+  lineinfile: 
+    path: ~/.bashrc
+    line: 'export LD_LIBRARY_PATH={{ dest_location_WL_Plugin_Lib }}'  

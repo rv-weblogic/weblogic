@@ -1,0 +1,11 @@
+  - hosts: all
+    become: yes
+    gather_facts: no
+    vars:
+      - weblogic_automata_binary: weblogic_automata
+    roles:
+      - role: create_domain_user
+        user_mem_args_value: "{{ weblogic_servers[server].user_mem_args_value }}"
+    
+      - role: weblogic_modification
+        become_user: "{{ domain_account.username }}"

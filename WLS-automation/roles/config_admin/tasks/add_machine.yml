@@ -1,0 +1,43 @@
+--- 
+
+- name:     Download config file for security_update
+  get_url:
+    url:    "{{ security_general.config_url }}"
+    dest:   "{{ security_general.config }}"
+    owner:  "{{ domain_account.username }}"
+    group:  "{{ domain_account.group }}"    
+    mode:   0750
+
+- name:     Download secret file for security_update
+  get_url:
+    url:    "{{ security_general.secret_url }}"
+    dest:   "{{ security_general.secret }}"
+    owner:  "{{ domain_account.username }}"
+    group:  "{{ domain_account.group }}"    
+    mode:   0750
+    
+- name: Expect {{ weblogic_servers[server].instance_address }} to be listening on {{ weblogic_servers[server].instance_port }}
+  wait_for:
+      host: "{{ weblogic_servers[server].instance_address }}"
+      port: "{{ weblogic_servers[server].instance_port }}"
+      state: started
+      timeout: "{{ timeout.admin }}"      
+  register: admin_listen
+  
+- block:    
+    - name: Update add_machine.py template
+      template:
+        src: add_machine.py.j2
+        dest: "{{ staging_folder.domain }}/add_machine.py"
+        owner: "{{domain_account.username}}"
+        group: "{{domain_account.group}}"
+        mode: 0774
+              
+    - name: Add {{ weblogic_domain_name }}HostAdmin machine and update security/general user online
+      shell: "{{ weblogic_install.oracle_home }}/oracle_common/common/bin/wlst.sh {{ staging_folder.domain }}/add_machine.py"
+  when: admin_listen.state == 'started'
+  
+- fail: 
+    msg: "The {{ weblogic_servers[server].instance_address }} is not listening on {{ weblogic_servers[server].instance_port }}"
+  when: admin_listen.state != 'started'  
+ 

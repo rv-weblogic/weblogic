@@ -1,0 +1,34 @@
+---
+
+- name: Create staging directory
+  file: 
+    state: directory 
+    path: "{{ staging_folder.domain }}"
+        
+- name: Check "{{ weblogic_node_manager_properties }}"
+  stat:
+    path: "{{ weblogic_node_manager_properties }}"
+  register: nodemanager   
+
+- block:     
+    - name: Expect the correct value of ListenAddress in nodemanager.properties
+      lineinfile:
+          state: present
+          path: "{{ weblogic_node_manager_properties }}"
+          regexp: 'ListenAddress='
+          line: 'ListenAddress={{ weblogic_servers[server].node_manager_address }}'
+           
+    - name: Expect the correct value of ListenPort in nodemanager.properties
+      lineinfile:
+          state: present
+          path: "{{ weblogic_node_manager_properties }}"
+          regexp: 'ListenPort='
+          line: 'ListenPort={{ weblogic_servers[server].node_manager_port }}'
+    
+    - name: Expect the correct value of JavaHome in nodemanager.properties
+      lineinfile:
+          path: "{{ weblogic_node_manager_properties }}"
+          regexp: 'JavaHome='
+          line: 'JavaHome={{ jdk_install.symlink }}'
+  when: nodemanager.stat.exists == true          
+  

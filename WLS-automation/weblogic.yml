@@ -1,0 +1,317 @@
+---
+
+- name: variables initialization
+  hosts: all
+  tasks:
+    - include_vars:
+        file: "{{ item }}"
+      with_items:
+        - "group_vars/{{ app }}/init.yml"
+        - "group_vars/{{ app }}/vault.yml"
+        - "group_vars/{{ app }}/vars.yml"
+  tags: always
+
+# install weblogic 
+- name: install weblogic
+  hosts: all
+  become: true
+  gather_facts: false
+  any_errors_fatal: true
+  roles: 
+    - install_weblogic
+  vars: 
+    server: admin
+  tags: install_weblogic
+- name: ensure ownership [admin]
+  hosts: all
+  become: True
+  gather_facts: false
+  any_errors_fatal: true  
+  roles: 
+    - ensure_ownership
+  tags: install_weblogic    
+   
+
+    
+# clean                                     
+- name: clean
+  hosts: all
+  become: true
+  gather_facts: false  
+  become_user: "{{ domain_account.username }}"
+  any_errors_fatal: true  
+  roles: 
+    - config_admin
+  vars: 
+    server: admin
+    task_type: clean
+  tags: clean
+
+
+
+# build
+- name: create domain [admin]
+  hosts: all
+  become: true
+  gather_facts: false  
+  become_user: "{{ domain_account.username }}"
+  any_errors_fatal: true  
+  roles: 
+    - config_admin
+  vars: 
+    task_type: create_domain
+  tags: build
+- name: ensure ownership [admin]
+  hosts: all
+  become: True
+  gather_facts: false
+  any_errors_fatal: true  
+  roles: 
+    - ensure_ownership
+  tags: build
+- name: start [admin]
+  hosts: all
+  become: true
+  gather_facts: false  
+  become_user: "{{ domain_account.username }}"
+  any_errors_fatal: true  
+  roles: 
+    - config_admin
+  vars: 
+    task_type: start_admin
+    start_old: Y
+  tags: build
+- name: add machine [admin]
+  hosts: all
+  become: true
+  gather_facts: false  
+  become_user: "{{ domain_account.username }}"
+  any_errors_fatal: true  
+  roles: 
+    - config_admin
+  vars: 
+    task_type: add_machine
+  tags: build
+- name: stop [admin]
+  hosts: all
+  become: true
+  gather_facts: false  
+  become_user: "{{ domain_account.username }}"
+  any_errors_fatal: true  
+  roles: 
+    - config_admin
+  vars: 
+    task_type: stop_admin
+    stop_old: Y
+  tags: build
+- name: config files [admin]
+  hosts: all
+  become: true
+  gather_facts: false  
+  become_user: "{{ domain_account.username }}"
+  any_errors_fatal: true  
+  roles: 
+    - config_admin
+  vars:
+    task_type: config_files
+  tags: build  
+  
+  
+  
+
+# start
+- name: start nodemanager [admin]
+  hosts: all
+  become: true
+  gather_facts: false  
+  become_user: "{{ domain_account.username }}"
+  any_errors_fatal: true  
+  roles: 
+    - config_nodemanager
+  vars:
+    task_type: start_nodemanager
+  tags: start  
+- name: start [admin]
+  hosts: all
+  become: true
+  gather_facts: false  
+  become_user: "{{ domain_account.username }}"
+  any_errors_fatal: true  
+  roles: 
+    - config_admin
+  vars: 
+    task_type: start_admin
+    start_old: Y
+  tags: start  
+- name: nmenroll [admin]
+  hosts: all
+  become: true
+  gather_facts: false  
+  become_user: "{{ domain_account.username }}"
+  any_errors_fatal: true  
+  roles: 
+    - config_nodemanager
+  vars:
+    task_type: nmenroll
+  tags: start
+- name: stop [admin]
+  hosts: all
+  become: true
+  gather_facts: false  
+  become_user: "{{ domain_account.username }}"
+  any_errors_fatal: true  
+  roles: 
+    - config_admin
+  vars: 
+    task_type: stop_admin
+    stop_old: Y
+  tags: start  
+- name: start [admin]
+  hosts: all
+  become: true
+  gather_facts: false  
+  become_user: "{{ domain_account.username }}"
+  any_errors_fatal: true  
+  roles: 
+    - config_admin
+  vars: 
+    task_type: start_admin
+  tags: start  
+
+
+       
+
+# config cluster 
+- name: config cluster
+  hosts: all
+  become: true
+  gather_facts: false  
+  become_user: "{{ domain_account.username }}"
+  any_errors_fatal: true  
+  roles: 
+    - config_admin
+  vars:
+    task_type: config_cluster
+  tags: config_cluster
+
+
+
+# config managed  
+- name: config managed as01
+  hosts: all
+  become: true
+  gather_facts: false  
+  become_user: "{{ domain_account.username }}"
+  any_errors_fatal: true  
+  roles: 
+    - config_managed
+  vars:
+    server: as01
+    task_type: config_managed
+  tags: config_managed
+- name: config managed as02
+  hosts: all
+  become: true
+  gather_facts: false  
+  become_user: "{{ domain_account.username }}"
+  any_errors_fatal: true  
+  roles: 
+    - config_managed
+  vars:
+    server: as02
+    task_type: config_managed
+  tags: config_managed
+
+
+  
+# config misc     
+- name: config miscellaneous
+  hosts: all
+  become: true
+  gather_facts: false  
+  become_user: "{{ domain_account.username }}"
+  any_errors_fatal: true  
+  roles: 
+    - config_admin
+  vars:
+    task_type: config_misc
+  tags: config_misc  
+    
+
+
+# restart
+- name: stop nodemanager [admin]
+  hosts: all
+  become: true
+  gather_facts: false  
+  become_user: "{{ domain_account.username }}"
+  any_errors_fatal: true  
+  roles: 
+    - config_nodemanager
+  vars:
+    task_type: restart_nodemanager
+  tags: restart
+- name: stop [admin]
+  hosts: all
+  become: true
+  gather_facts: false  
+  become_user: "{{ domain_account.username }}"
+  any_errors_fatal: true  
+  roles: 
+    - config_admin
+  vars: 
+    task_type: restart_admin
+  tags: restart
+
+
+
+#deploy          
+- name: deploy
+  hosts: all
+  become: true
+  gather_facts: false  
+  become_user: "{{ domain_account.username }}"
+  any_errors_fatal: true  
+  roles: 
+    - config_admin
+  vars:
+    server: admin 
+    task_type: deploy
+  tags: deploy
+
+
+                
+# start_managed
+- name: sync data 
+  hosts: all
+  become: true
+  gather_facts: false  
+  become_user: "{{ domain_account.username }}"
+  any_errors_fatal: true  
+  roles: 
+    - config_managed
+  vars:
+    task_type: sync_data
+  tags: start_managed                            
+- name: start nodemanager
+  hosts: all
+  become: true
+  gather_facts: false  
+  become_user: "{{ domain_account.username }}"
+  any_errors_fatal: true  
+  roles: 
+    - config_nodemanager
+  vars:
+    task_type: start_nodemanager
+  tags: start_managed   
+- name: start managed
+  hosts: all
+  become: true
+  gather_facts: false  
+  become_user: "{{ domain_account.username }}"
+  any_errors_fatal: true  
+  roles: 
+    - config_managed
+  vars: 
+    task_type: start_managed
+  tags: start_managed

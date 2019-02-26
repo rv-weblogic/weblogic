@@ -1,0 +1,50 @@
+#!/usr/bin/python
+# Author : RV
+
+import time
+import getopt
+import sys
+import re
+
+domain_name = '{{ weblogic_domain_name }}';
+weblogic_home = '{{ weblogic_install.oracle_home }}';
+domain_application_home = '{{ domain_account.applications }}';
+domain_configuration_home = '{{ domain_account.home }}';
+node_manager_home = '{{ domain_account.nodemanager }}';
+weblogic_template = weblogic_home + '/wlserver/common/templates/wls/wls.jar';
+admin_name = '{{ weblogic_servers[server].instance_name }}';
+nodemanager_username = '{{ weblogic_admin_user }}';
+nodemanager_password = '{{ weblogic_admin_password }}';
+listen_address = '{{ weblogic_servers[server].instance_address }}';
+lister_port = '{{ weblogic_servers[server].instance_port }}';
+
+# Load the default domain template
+readTemplate(weblogic_template);
+setOption('DomainName', domain_name);
+setOption('OverwriteDomain', 'true');
+setOption('ServerStartMode', 'prod');
+setOption('NodeManagerType', 'PerDomainNodeManager');
+setOption('NodeManagerHome', node_manager_home);
+
+cd('/Security/base_domain/User/weblogic');
+cmo.setName(nodemanager_username);
+cmo.setUserPassword(nodemanager_password);
+cmo.setPassword(nodemanager_password);
+
+cd('/');
+cd('/Server/AdminServer');
+cmo.setName(admin_name);
+cmo.setListenPort(int(lister_port));
+cmo.setListenAddress(listen_address);
+
+print 'Save domain';
+writeDomain(domain_configuration_home);
+closeTemplate();
+
+print 'Read domain';
+readDomain(domain_configuration_home);
+# do nothing on the readDomain so as not to give warning
+cd('/');
+updateDomain();
+
+closeDomain();

@@ -1,0 +1,10 @@
+#!/bin/env python
+'''
+Banana Cluster Control GUI Client
+'''
+
+from lib.bccx import bccx
+
+if __name__ == '__main__':
+    bccx.main()
+

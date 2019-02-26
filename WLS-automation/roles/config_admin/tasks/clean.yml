@@ -1,0 +1,33 @@
+---
+
+- name: Clean the {{ domain_account.home }} directory
+  shell: rm -rf *
+  args:
+      chdir: "{{ domain_account.home }}"
+  
+- name: Check .staging/deployment
+  stat:
+    path: "{{ domain_account.home }}/.staging/deployment/"
+  register: staging_deployment
+  
+- name: Clean the {{ domain_account.home }}.staging/deployment/ directory
+  shell: rm -fr .staging/deployment/
+  args:
+      chdir: "{{ domain_account.home }}"
+  when: staging_deployment.stat.exists == true 
+        
+- name: Check staging
+  stat:
+    path: "{{ domain_account.home }}.staging/*"
+  register: staging  
+  
+- name: Clean the {{ domain_account.home }}/.staging/ directory
+  shell: rm -f .staging/*
+  args:
+      chdir: "{{ domain_account.home }}"
+  when: staging.stat.exists == true 
+
+- name: Kill all java process
+  shell: pkill -9 java
+  failed_when: no
+  

@@ -1,0 +1,4 @@
+generic.build.info.time=2015-11-25 15:53:17
+generic.build.info.env=dev
+generic.build.info.version=1.0.0 
+generic.build.info.system=auditApp

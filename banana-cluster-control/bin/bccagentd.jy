@@ -1,0 +1,384 @@
+#!/bin/env python
+
+try:
+    from java.lang import Runtime
+except ImportError:
+    raise ImportError(1, 'Not within the Jython environment.')
+
+from datetime import datetime
+from SimpleXMLRPCServer import SimpleXMLRPCServer
+from SocketServer import ThreadingMixIn
+import inspect
+
+import ConfigParser
+import sys, os, socket
+
+class CommunicationException(Exception):
+    pass
+#===============================================================================
+CFG_SECT_WEBLOGIC = "weblogic"
+CFG_SECT_INTERNAL = "bccagentd.jy"
+
+dict_cfg = dict()
+
+pf = sys.stdout.write
+pfe = sys.stderr.write
+
+def pok(str): print >>sys.stderr, "[%s] %s" % ("OK", str)
+def perr(str): print >>sys.stderr, "<%s> <%s> %s" % (datetime.now().__str__(), "ERROR", str)
+def pinfo(str): print >>sys.stderr, "<%s> <%s> %s" % (datetime.now().__str__(), "INFO", str)
+
+# enable multithreaded
+class MultiThreadedXMLRPCServer(ThreadingMixIn, SimpleXMLRPCServer):
+    # fix the 'Address already in use' issue when there are connections in TIME_WAIT state
+    def server_bind(self):
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        SimpleXMLRPCServer.server_bind(self)
+#===============================================================================
+def _status_ms(ms_name):
+    pinfo("cmo.lookupServerLifeCycleRuntime(%r).getState()" % (ms_name,))
+    status = cmo.lookupServerLifeCycleRuntime(ms_name).getState()
+    return {ms_name:status}
+#/def
+
+def _start_ms(ms_name, type='Server', block='false'):
+    pinfo("start(%r, type=%r, block=%r)" % (ms_name, type, block))
+    start(ms_name, type=type, block=block)
+#/def
+
+def _stop_ms(ms_name, type='Server', ignoreSessions='true', force='true', block='false'):
+    pinfo("shutdown(%r, entityType=%r, ignoreSessions=%r, force=%r, block=%r)" %
+          (ms_name, type, ignoreSessions, force, block))
+    shutdown(ms_name, entityType=type, ignoreSessions=ignoreSessions, force=force, block=block)
+#/def
+
+def get_pid():
+    # os.getpid() is not available in Jython 2.2
+    from java.lang.management import ManagementFactory
+    return ManagementFactory.getRuntimeMXBean().getName().split("@")[0]
+#/def
+
+def terminate():
+    pinfo("Got request to terminate")
+    # let's commit Seppuku
+    str_pid = get_pid()
+    # unfortunately, there is no "nice" way to do this
+    run_cmd(["/bin/kill", str_pid])
+#/def
+
+def run_cmd(list_cmd):
+    # Python syntax valid fix for Runtime.getRuntime().exec()
+    javaexec = getattr(Runtime.getRuntime(), "exec")
+    process = javaexec(list_cmd)
+    process.waitFor()
+    ret = process.exitValue()
+    process.destroy() # mark for next GC
+    return ret
+#/def
+
+def _connect_weblogic_admin(list_params):
+    tuple_params = tuple(list_params)
+    if connected == 'true':
+        pinfo("Already connected to a weblogic admin")
+        return True
+    pinfo("Not connected to weblogic admin; connecting now...")
+    try:
+        # connect('soa12', 'mtogov123', 't3://10.77.6.11:15001')
+        pinfo("%s%r" % ('connect', tuple_params))
+        connect(*tuple_params)
+    except Exception, e:
+        raise
+    return False
+#/def
+
+def list_ms(list_params):
+    '''
+    Return a list of Weblogic Managed servers
+    :param list_params:
+    :return:
+    '''
+    tuple_params = tuple(list_params)
+    pinfo("%s%r" % (inspect.stack()[0][3], tuple_params))
+    try:
+        _connect_weblogic_admin(tuple_params)
+    except Exception, e:
+        perr(e)
+        raise
+    #
+    if cmo.type != 'Domain':
+        serverConfig()
+    list_ms_servers = list(ls('Servers', returnMap='true'))
+    # list_ms_servers.remove(serverName) # remove wls_admin
+    pinfo("Done; will keep logged in to weblogic admin to improve response time")
+    #pinfo("Done; disconnecting from weblogic admin")
+    #disconnect()
+    return list_ms_servers
+#/def
+
+def start_ms(list_params, list_ms):
+    tuple_params = tuple(list_params)
+    pinfo("%s%r" % (inspect.stack()[0][3], tuple_params))
+    try:
+        _connect_weblogic_admin(tuple_params)
+    except Exception, e:
+        perr(e)
+        raise
+    #
+    # from threading import Thread
+    # list_thread = list()
+    # for ms in list_ms:
+    #     #t = Thread(target=lambda: _start_ms(ms))
+    #     t = Thread(target=_start_ms, args=(ms,))
+    #     t.start()
+    #     list_thread.append(t)
+    # for t in  list_thread:
+    #     t.join() # let's wait
+    #
+    for ms in list_ms:
+        _start_ms(ms)
+    #
+    pinfo("Done; will keep logged in to weblogic admin to improve response time")
+    #pinfo("Done; disconnecting from weblogic admin")
+    #disconnect()
+    return True
+#/def
+
+def stop_ms(list_params, list_ms):
+    tuple_params = tuple(list_params)
+    pinfo("%s%r" % (inspect.stack()[0][3], tuple_params))
+    try:
+        _connect_weblogic_admin(tuple_params)
+    except Exception, e:
+        perr(e)
+        raise
+    #/try
+    # ensure that admin is last
+    if serverName in list_ms:
+        list_ms.remove(serverName)
+        list_ms.append(serverName) # append to the end
+    #
+    for ms in list_ms:
+        _stop_ms(ms)
+    #
+    pinfo("Done; will keep logged in to weblogic admin to improve response time")
+    #pinfo("Done; disconnecting from weblogic admin...")
+    #disconnect()
+    return True
+
+def health_ms(list_params, list_ms):
+    tuple_params = tuple(list_params)
+    pinfo("%s%r" % (inspect.stack()[0][3], tuple_params))
+    try:
+        _connect_weblogic_admin(tuple_params)
+    except Exception, e:
+        perr(e)
+        raise
+    #/try
+    if cmo.type != 'DomainRuntime':
+        domainRuntime()
+    #/if
+    # dict_health_ref = {4: 'HEALTH_OVERLOADED',
+    #                    3: 'HEALTH_FAILED',
+    #                    2: 'HEALTH_CRITICAL',
+    #                    1: 'HEALTH_WARN',
+    #                    0: 'HEALTH_OK'}
+    dict_all = {}
+    for server in domainRuntimeService.getServerRuntimes()[:]:
+        str_name = server.getName()
+        if str_name not in list_ms:
+            continue
+        #/if
+        health_state = server.getHealthState()
+        int_health = health_state.getState()
+        dict_health_ref = dict([(getattr(health_state,i),i) for i in dir(health_state) if i.startswith('HEALTH_')])
+        if dict_health_ref.has_key(int_health):
+            dict_all.setdefault(str_name, dict_health_ref[int_health])
+        #/if
+    #/for
+    # dict_all = {'wls_admin': 'HEALTH_OK', 'wls_wsm1': 'HEALTH_OK', 'wls_ess1': 'HEALTH_OK', 'wls_osb2': 'HEALTH_OK', 'wls_bam1': 'HEALTH_OK'}
+    for server in list_ms:
+        dict_all.setdefault(server, 'UNKNOWN')
+    #/for
+    pinfo("Done; will keep logged in to weblogic admin to improve response time")
+    #pinfo("Done; disconnecting from weblogic admin...")
+    #disconnect()
+    if cmo.type != 'Domain':
+        serverConfig()
+    return dict_all
+#/def
+
+def heap_ms(list_params, list_ms):
+    tuple_params = tuple(list_params)
+    pinfo("%s%r" % (inspect.stack()[0][3], tuple_params))
+    try:
+        _connect_weblogic_admin(tuple_params)
+    except Exception, e:
+        perr(e)
+        raise
+    #/try
+    if cmo.type != 'DomainRuntime':
+        domainRuntime()
+    #/if
+    dict_all = {}
+    for server in domainRuntimeService.getServerRuntimes()[:]:
+        str_name = server.getName()
+        if str_name not in list_ms:
+            continue
+        #/if
+        int_heap_usage = server.getJVMRuntime().getHeapFreePercent()
+        dict_all.setdefault(str_name, int_heap_usage)
+        #/if
+    #/for
+    for server in list_ms:
+        dict_all.setdefault(server, -1)
+    #/for
+    pinfo("Done; will keep logged in to weblogic admin to improve response time")
+    #pinfo("Done; disconnecting from weblogic admin...")
+    #disconnect()
+    if cmo.type != 'Domain':
+        serverConfig()
+    return dict_all
+#/def
+
+def hogging_ms(list_params, list_ms):
+    tuple_params = tuple(list_params)
+    pinfo("%s%r" % (inspect.stack()[0][3], tuple_params))
+    try:
+        _connect_weblogic_admin(tuple_params)
+    except Exception, e:
+        perr(e)
+        raise
+    #/try
+    if cmo.type != 'DomainRuntime':
+        domainRuntime()
+    #/if
+    dict_all = {}
+    for server in domainRuntimeService.getServerRuntimes()[:]:
+        str_name = server.getName()
+        if str_name not in list_ms:
+            continue
+        #/if
+        int_hogging_count = server.getThreadPoolRuntime().getHoggingThreadCount()
+        dict_all.setdefault(str_name, int_hogging_count)
+        #/if
+    #/for
+    for server in list_ms:
+        dict_all.setdefault(server, -1)
+    #/for
+    pinfo("Done; will keep logged in to weblogic admin to improve response time")
+    #pinfo("Done; disconnecting from weblogic admin...")
+    #disconnect()
+    if cmo.type != 'Domain':
+        serverConfig()
+    return dict_all
+#/def
+
+def status_ms(list_params, list_ms):
+    tuple_params = tuple(list_params)
+    pinfo("%s%r" % (inspect.stack()[0][3], tuple_params))
+    try:
+        _connect_weblogic_admin(tuple_params)
+    except Exception, e:
+        perr(e)
+        raise
+    #/try
+    if cmo.type != 'DomainRuntime':
+        domainRuntime()
+    from threading import Thread
+    import Queue
+    que = Queue.Queue()
+    list_thread = list()
+    for ms in list_ms:
+        t = Thread(target=lambda q, arg1: q.put(_status_ms(arg1)), args=(que, ms))
+        t.start()
+        list_thread.append(t)
+    for t in  list_thread:
+        t.join() # let's wait for the result
+    dict_all = dict()
+    while not que.empty():
+        result = que.get()
+        dict_all.update(result)
+    #
+    pinfo("Done; will keep logged in to weblogic admin to improve response time")
+    #pinfo("Done; disconnecting from weblogic admin...")
+    #disconnect()
+    if cmo.type != 'Domain':
+        serverConfig()
+    return dict_all
+#/def
+
+def status_admin(str_username, str_password, str_admin, str_address, str_port, str_domain):
+    # nmConnect('soa12', 'mtogov123', '10.77.6.11', '25001', 'soa')
+    tuple_params = (str_username,
+                    str_password,
+                    str_address,
+                    str_port,
+                    str_domain)
+    pinfo("%s%r" % (inspect.stack()[0][3], tuple_params))
+    if not nm():
+        pinfo("Not connected to node manager; connecting now...")
+        nmConnect(*tuple_params)
+    else:
+        pinfo("Already connected to Node Nanager")
+    #result = __status_admin__(str_admin)
+    status = nmServerStatus(str_admin)
+    dict_result = {str_admin:status}
+
+    pinfo("Done; will keep logged in to node manager admin to improve response time")
+    #pinfo("done; disconnecting")
+    #nmDisconnect()
+    return dict_result
+#/def
+
+def parse_config(str_config):
+    '''
+    Parse the configuration file
+    :param str_config: path to the configuration file
+    :return: dict_cfg
+    '''
+    pinfo("Parsing %r" % str_config)
+    if not os.path.isfile(str_config):
+        perr("Configuration file %r cannot be found" % str_config)
+        sys.exit(1)
+    cfg_parser = ConfigParser.ConfigParser()
+    cfg_parser.read(str_config)
+    cfg = {}
+    for section in cfg_parser.sections():
+        cfg.setdefault(section, {})
+        for option in cfg_parser.options(section):
+            cfg[section][option] = cfg_parser.get(section, option)
+    return cfg
+#/def
+
+if __name__  in ('__main__', 'main'): # i know..fuking jython does weird shit
+    if len(sys.argv) != 2:
+        #pinfo("Usage: %s file.ini file.pid\n' % sys.argv[0])
+        pinfo("Usage: %s config.ini\n" % sys.argv[0])
+        sys.exit(1)
+    dict_cfg = parse_config(sys.argv[1])
+
+    str_listen_address = dict_cfg[CFG_SECT_INTERNAL]['listen_address']
+    int_listen_port = int(dict_cfg[CFG_SECT_INTERNAL]['listen_port'])
+    server = MultiThreadedXMLRPCServer( (str_listen_address, int_listen_port) )
+
+    server.register_function(get_pid, 'get_pid')
+    server.register_function(terminate, 'terminate')
+    server.register_function(list_ms, 'list_ms')
+    server.register_function(status_ms, 'status_ms')
+    server.register_function(start_ms, 'start_ms')
+    server.register_function(stop_ms, 'stop_ms')
+    server.register_function(status_admin, 'status_admin')
+    server.register_function(health_ms, 'health_ms')
+    server.register_function(heap_ms, 'heap_ms')
+    server.register_function(hogging_ms, 'hogging_ms')
+
+    # update pid
+    #str_pid = get_pid()
+    #str_pid_file = sys.argv[2]
+    #pinfo("Updating PID '%s' to file '%s'" % (str_pid, str_pid_file))
+    #f_pid = open(str_pid_file, "w")
+    #f_pid.write(str_pid)
+    #f_pid.close()
+
+    pinfo("Listening on %r:%r'\n" %(str_listen_address, int_listen_port))
+    server.serve_forever()

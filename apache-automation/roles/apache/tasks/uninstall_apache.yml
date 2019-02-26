@@ -1,0 +1,9 @@
+
+- name: uninstall apache related modules httpd mod_ssl
+  yum: name={{ item }} state=absent
+  with_items:
+  # apr-util is installed as part of httpd depedency, now remove it. apr is: Apache Portable Runtime
+    - httpd
+    - mod_ssl
+    - apr-util
+

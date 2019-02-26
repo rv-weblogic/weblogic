@@ -1,0 +1,12 @@
+---
+- name: install Binaries for RHEL 7
+  yum: name={{ item }} state=present
+  with_items: 
+    - "{{rhel_7}}"
+  when: download_library_yum_7 | default(False) == True
+  
+- name: install Binaries for RHEL 6
+  yum: name={{ item }} state=present
+  with_items: 
+    - "{{rhel_6}}"
+  when: download_library_yum_6 | default(False) == True

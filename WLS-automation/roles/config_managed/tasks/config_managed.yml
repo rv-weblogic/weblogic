@@ -1,0 +1,25 @@
+---   
+  
+- name: Expect {{ weblogic_servers['admin'].instance_address }} to be listening on {{ weblogic_servers['admin'].instance_port }}
+  wait_for:
+      host: "{{ weblogic_servers['admin'].instance_address }}"
+      port: "{{ weblogic_servers['admin'].instance_port }}"
+      state: started
+      timeout: "{{ timeout.admin }}"      
+  register: admin_listen
+  
+- block:    
+    - name: Update config_managed.py template 
+      template:
+        src: config_managed.py.j2
+        dest: "{{ staging_folder.domain }}/config_managed.py"
+        owner: "{{ domain_account.username }}"
+        group: "{{ domain_account.group }}"
+        mode: 0774              
+    - name: Configure {{ weblogic_servers[server].instance_name }} 
+      shell: "{{ weblogic_install.oracle_home }}/oracle_common/common/bin/wlst.sh {{ staging_folder.domain }}/config_managed.py"
+  when: admin_listen.state == 'started'
+  
+- fail: 
+    msg: "The {{ weblogic_servers[server].instance_address }} is not listening on {{ weblogic_servers[server].instance_port }}"
+  when: admin_listen.state != 'started'  

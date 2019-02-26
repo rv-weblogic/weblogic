@@ -1,0 +1,45 @@
+---
+
+- name: Expect the presence of config.xml 
+  register: domain_exist
+  stat: 
+      path: "{{ domain_config_xml }}"
+
+- block:
+    - name: Check audit.zip
+      stat:
+        path: "{{ domain_account.home }}/*.zip"
+      register: check_audit_zip
+    - name: delete zip files
+      shell: rm -f *.zip
+      args:
+        executable: /bin/bash
+        chdir: "{{ domain_account.home }}"  
+      when: check_audit_zip.stat.exists == true
+    - name: Check audit.zip from ansible server
+      stat:
+        path: "{{ name_prefix }}.zip"
+      register: check_audit_zip_localhost      
+      delegate_to: localhost
+    - name: delete old {{ name_prefix }}.zip from ansible server
+      shell: rm -f {{ name_prefix }}.zip
+      delegate_to: localhost
+      run_once: true
+      when: check_audit_zip_localhost.stat.exists == true
+    - name: zip {{ domain_account.home }} 
+      shell: "cd {{ domain_account.home }}/ && zip -r {{ weblogic_domain_name }}.zip applications/ autodeploy/ bin/ common/ config/ console-ext/ init-info/ lib/ nodemanager/ pending/ security/ servers/"
+    - name: copy to ansible server
+      fetch:
+        src: "{{ domain_account.home }}/{{ weblogic_domain_name }}.zip"
+        dest: "{{ weblogic_domain_name }}.zip"  
+        flat: true
+  when: domain_exist.stat.exists
+        
+- block:
+    - name: copy to second module
+      copy:
+        src: "{{ weblogic_domain_name }}.zip"
+        dest: "{{ domain_account.home }}/{{ weblogic_domain_name }}.zip"                  
+    - name: unzip {{ weblogic_domain_name }}.zip
+      shell: "cd {{ domain_account.home }}/ &&  unzip {{ name_prefix }}.zip"
+  when: not domain_exist.stat.exists

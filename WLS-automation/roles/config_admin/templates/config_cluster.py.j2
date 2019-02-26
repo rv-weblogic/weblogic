@@ -1,0 +1,17 @@
+connect('{{ weblogic_admin_user }}','{{ weblogic_admin_password }}', '{{ weblogic_admin_url }}')
+
+edit()
+startEdit()
+
+cd('/')
+cmo.createCluster('{{ weblogic_cluster }}')
+
+cd('/Clusters/{{ weblogic_cluster }}')
+cmo.setClusterMessagingMode('unicast')
+cmo.setClusterBroadcastChannel('')
+
+save()
+activate()
+
+disconnect()
+exit()

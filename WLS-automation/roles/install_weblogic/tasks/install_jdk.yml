@@ -1,0 +1,43 @@
+---
+
+- name: Check staging
+  stat:
+    path: "{{ staging_folder.weblogic }}/{{ jdk_package.name }}"
+  register: server_jre
+
+- block: 
+    - name: Create staging directory 
+      file: 
+          state: directory 
+          path: "{{ staging_folder.weblogic }}"
+    
+    - name: Download JDK to staging directory
+      get_url: 
+          url: "{{ jdk_package.url }}"
+          dest: "{{ staging_folder.weblogic }}"
+          checksum: "{{ jdk_package.cksum_type }}:{{ jdk_package.cksum_value }}"
+              
+    - name: Extract JDK archive
+      unarchive:
+          src: "{{ staging_folder.weblogic }}/{{ jdk_package.name }}"
+          remote_src: yes
+          dest: "{{ weblogic_account.home }}"
+          creates: "{{ jdk_install.path }}"
+  when: server_jre.stat.exists == false          
+          
+- name: Create generic JDK symbolic link
+  file: 
+      src: "{{ jdk_install.path }}"
+      dest: "{{ jdk_install.symlink }}"
+      state: link
+      
+- name: Add JAVA_HOME environment variables in ~/.bashrc
+  lineinfile: 
+      dest: "{{ weblogic_account.home }}/.bashrc"
+      line: export JAVA_HOME="{{ jdk_install.symlink }}"
+      
+- name: Add Java bin folder to path in bashrc
+  lineinfile: 
+      dest: "{{ weblogic_account.home }}/.bashrc"
+      line: export PATH=$JAVA_HOME/bin:$PATH
+  

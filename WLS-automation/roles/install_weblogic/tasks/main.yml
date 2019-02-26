@@ -1,0 +1,15 @@
+---
+
+- include_tasks: addhosts.yml
+
+- include_tasks: create_user.yml
+
+- include_tasks: configure_os.yml  
+
+- include_tasks: install_jdk.yml
+  become_user: "{{ weblogic_account.username }}"
+  
+- include_tasks: install_weblogic.yml
+  become_user: "{{ weblogic_account.username }}"  
+
+- include_tasks: create_domain_user.yml  

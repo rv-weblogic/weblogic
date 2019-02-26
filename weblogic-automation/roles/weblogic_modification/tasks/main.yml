@@ -1,0 +1,11 @@
+- include_tasks: common.yml
+  tags: always
+
+- include_tasks: build.yml
+  tags: build
+
+- include_tasks: config.yml
+  tags: config
+  
+- include_tasks: deploy.yml
+  tags: deploy

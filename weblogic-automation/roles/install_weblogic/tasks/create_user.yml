@@ -1,0 +1,31 @@
+  - name: Create UNIX group ({{ weblogic_account.group }})
+    register: linuxgroup
+    group:
+        name: "{{ weblogic_account.group }}"
+        gid: "{{ weblogic_account.gid }}"
+        state: present
+        
+  - name: Create UNIX user ({{ weblogic_account.username }})
+    when: linuxgroup is success
+    user:
+        name: "{{ weblogic_account.username }}"
+        home: "{{ weblogic_account.home }}"
+        uid: "{{ weblogic_account.uid }}"
+        group: "{{ weblogic_account.group }}"
+        shell: "{{ weblogic_account.shell }}"
+
+  - name: Add "ll" alias in bashrc
+    lineinfile: 
+        dest: "{{ weblogic_account.home }}/.bashrc" 
+        line: alias ll="ls -laF"
+
+  - name: Add USER_MEM_ARGS to use random in bashrc
+    lineinfile: 
+        dest: "{{ weblogic_account.home }}/.bashrc" 
+        line: export USER_MEM_ARGS="-Djava.security.egd=file:/dev/./urandom"
+
+  - name: Fix home directory permission ({{ weblogic_account.home }})
+    file:
+        dest: "{{ weblogic_account.home }}"
+        state: directory
+        mode: 0750

@@ -1,0 +1,107 @@
+connect('{{ weblogic_admin_user }}','{{ weblogic_admin_password }}', '{{ weblogic_admin_url }}')
+
+edit()
+startEdit()
+
+# create jms module and server
+cd('/')
+cmo.createJMSSystemResource('{{ weblogic_system_module.name }}', '{{ weblogic_system_module.descriptor_file_name }}')
+cd('/JMSSystemResources/{{ weblogic_system_module.name }}')
+
+set('Targets',jarray.array([ObjectName('com.bea:Name={{ weblogic_cluster }},Type=Cluster')], ObjectName))
+cmo.createSubDeployment('{{ weblogic_group }}')
+
+cd('/JMSSystemResources/{{ weblogic_system_module.name }}/SubDeployments/{{ weblogic_group }}')
+set('Targets',jarray.array([ObjectName('com.bea:Name={{ weblogic_servers['as01'].jms_server }},Type=JMSServer'), ObjectName('com.bea:Name={{ weblogic_servers['as02'].jms_server }},Type=JMSServer')], ObjectName))
+
+# create jms resources 
+{% for names in system_module_resources %}
+#
+cd('/JMSSystemResources/{{ weblogic_system_module.name }}/JMSResource/{{ weblogic_system_module.name }}')
+cmo.createConnectionFactory('{{ names.name }}')
+cd('/JMSSystemResources/{{ weblogic_system_module.name }}/JMSResource/{{ weblogic_system_module.name }}/ConnectionFactories/{{ names.name }}')
+cmo.setJNDIName('{{ names.jndiname }}')
+{% if names and names.AttachJMSXUserId %}
+cd('/JMSSystemResources/{{ weblogic_system_module.name }}/JMSResource/{{ weblogic_system_module.name }}/ConnectionFactories/{{ names.name }}/SecurityParams/{{ names.name }}')
+cmo.setAttachJMSXUserId({{ names.AttachJMSXUserId }})
+{% endif %}
+{% if names and names.ClientIdPolicy %}
+cd('/JMSSystemResources/{{ weblogic_system_module.name }}/JMSResource/{{ weblogic_system_module.name }}/ConnectionFactories/{{ names.name }}/ClientParams/{{ names.name }}')
+cmo.setClientIdPolicy('{{ names.ClientIdPolicy }}')
+{% endif %}
+{% if names and names.SubscriptionSharingPolicy %}
+cmo.setSubscriptionSharingPolicy('{{ names.SubscriptionSharingPolicy }}')
+{% endif %}
+{% if names and names.MessagesMaximum %}
+cmo.setMessagesMaximum({{ names.MessagesMaximum }})
+{% endif %}
+{% if names and names.XAConnectionFactoryEnabled %}
+cd('/JMSSystemResources/{{ weblogic_system_module.name }}/JMSResource/{{ weblogic_system_module.name }}/ConnectionFactories/{{ names.name }}/TransactionParams/{{ names.name }}')
+cmo.setXAConnectionFactoryEnabled({{ names.XAConnectionFactoryEnabled }})
+{% endif %}
+{% if names and names.DefaultTargetingEnabled %}
+cd('/JMSSystemResources/{{ weblogic_system_module.name }}/JMSResource/{{ weblogic_system_module.name }}/ConnectionFactories/{{ names.name }}')
+cmo.setDefaultTargetingEnabled({{ names.DefaultTargetingEnabled }})
+{% endif %}
+{% endfor %}
+
+# create data sources
+{% for systems in system_data_sources %}
+#
+cd('/')
+cmo.createJDBCSystemResource('{{ systems.name }}')
+cd('/JDBCSystemResources/{{ systems.name }}/JDBCResource/{{ systems.name }}')
+cmo.setName('{{ systems.name }}')
+cd('/JDBCSystemResources/{{ systems.name }}/JDBCResource/{{ systems.name }}/JDBCDataSourceParams/{{ systems.name }}')
+set('JNDINames',jarray.array([String('{{ systems.jndiname }}')], String))
+cd('/JDBCSystemResources/{{ systems.name }}/JDBCResource/{{ systems.name }}/JDBCDriverParams/{{ systems.name }}')
+cmo.setUrl('{{ systems.url }}')
+cmo.setDriverName('{{ systems.drivername }}')
+cd('/JDBCSystemResources/{{ systems.name }}/JDBCResource/{{ systems.name }}/JDBCConnectionPoolParams/{{ systems.name }}')
+cmo.setTestTableName('{{ systems.testtablename }}')
+cd('/JDBCSystemResources/{{ systems.name }}/JDBCResource/{{ systems.name }}/JDBCDataSourceParams/{{ systems.name }}')
+cmo.setGlobalTransactionsProtocol('{{ systems.globaltransactionsprotocol }}')
+cd('/JDBCSystemResources/{{ systems.name }}')
+set('Targets',jarray.array([ObjectName('com.bea:Name={{ weblogic_cluster }},Type=Cluster')], ObjectName))
+cd('/JDBCSystemResources/{{ systems.name }}/JDBCResource/{{ systems.name }}/JDBCDriverParams/{{ systems.name }}/Properties/{{ systems.name }}')
+cmo.createProperty('user')
+cd('/JDBCSystemResources/{{ systems.name }}/JDBCResource/{{ systems.name }}/JDBCDriverParams/{{ systems.name }}/Properties/{{ systems.name }}/Properties/user')
+cmo.setValue('{{ systems.user }}')
+cd('/JDBCSystemResources/{{ systems.name }}')
+set('Targets',jarray.array([ObjectName('com.bea:Name={{ weblogic_cluster }},Type=Cluster')], ObjectName))
+# update data source password
+cd('/')
+cmo.setProductionModeEnabled(false)
+# configure the data source password
+cd('/JDBCSystemResources/{{ systems.name }}/JDBCResource/{{ systems.name }}/JDBCDriverParams/{{ systems.name }}')
+setEncrypted('Password', '{{ systems.password }}', '{{ systems.config }}', '{{ systems.secret }}')
+cd('/')
+cmo.setProductionModeEnabled(true)
+{% endfor %}
+
+cd('/SecurityConfiguration/{{ name_prefix }}/Realms/myrealm')
+cmo.createAuthenticationProvider('{{ realm_providers.name }}', 'weblogic.security.providers.authentication.{{ realm_providers.name }}')
+
+cd('/SecurityConfiguration/{{ name_prefix }}/Realms/myrealm/AuthenticationProviders/{{ realm_providers.name }}')
+cmo.setControlFlag('{{ realm_providers.controlflag }}')
+
+cmo.setPort({{ realm_providers.port }})
+cmo.setPrincipal('{{ realm_providers.principal }}')
+cmo.setHost('{{ realm_providers.host }}')
+cmo.setGroupBaseDN('{{ realm_providers.groupbasedn }}')
+cmo.setUserBaseDN('{{ realm_providers.userbasedn }}')
+
+cd('/')
+cmo.setProductionModeEnabled(false)
+
+cd('/SecurityConfiguration/{{ name_prefix }}/Realms/myrealm/AuthenticationProviders/{{ realm_providers.name }}')
+setEncrypted('Credential', '{{ realm_providers.credential }}', '{{ realm_providers.config }}', '{{ realm_providers.secret }}')
+
+cd('/')
+cmo.setProductionModeEnabled(true)
+
+save()
+activate()
+
+disconnect()
+exit()

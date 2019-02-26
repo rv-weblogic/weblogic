@@ -1,0 +1,343 @@
+{
+   "internal": {
+      "timeout": 5,
+      "timeout_long": 60
+   },
+   "wlst": {
+      "env_vars": [
+         "USER_MEM_ARGS=\"-Djava.security.egd=file:/dev/./urandom -XX:MaxPermSize=512M\""
+      ],
+      "script_path": "/opt/wl12c/weblogic/wlserver/common/bin/wlst.sh",
+      "script_args": [
+         "-skipWLSModuleScanning"
+      ]
+   },
+   "credential": {
+      "username": "audit12",
+      "password": "mtogov123",
+      "protocol": "t3"
+   },
+   "edit": {
+      "save_changes": true,
+      "activate_changes": true
+   },
+   "domain": {
+      "name": "audit",
+      "domain_template": "/opt/wl12c/weblogic/wlserver/common/templates/wls/wls.jar",
+      "domain_home": "/opt/wl12c/domains/audit",
+      "java_home": "/opt/wl12c/jdk",
+      "production_mode_enabled": "true",
+      "server_start_mode": "prod",
+      "admin_server": {
+         "name": "auditAdmin",
+         "host": "saedev01",
+         "port": "17120",
+         "type": "admin",
+         "machine": {
+            "build_mode": "offline",
+            "name": "auditHostAdmin",
+            "host": "saedev01",
+            "port": "27120",
+            "protocol": "SSL",
+            "type": "UnixMachine"
+         },
+         "server_start": {
+            "arguments": [
+               "-Djava.security.egd=file:/dev/./urandom",
+               "-Dweblogic.security.SSL.ignoreHostnameVerification=true",
+               "-Dsec.admin.directoryCredentials=rusadmin"
+            ]
+         },
+         "logging": {
+            "log_file_name": "logs/auditAdmin.%yyyy%%MM%%dd%-%k%%mm%.log",
+            "rotation_type": "byTime",
+            "rotation_file_size": "5000",
+            "begin_rotation_time": "23:59",
+            "rotation_interval": "24",
+            "number_of_files_limited": "true",
+            "file_count": "125"
+         }
+      },
+      "cluster": {
+         "name": "auditCluster",
+         "messaging_mode": "unicast",
+         "servers": [
+            {
+               "name": "auditAs01",
+               "host": "saedev01",
+               "port": "7121",
+               "type": "managed",
+               "machine": {
+                  "build_mode": "online",
+                  "name": "auditHostAs01",
+                  "host": "saedev01",
+                  "port": "27121",
+                  "protocol": "SSL",
+                  "type": "UnixMachine"
+               },
+               "server_start": {
+                  "arguments": [
+                     "-Djava.security.egd=file:/dev/./urandom",
+                     "-Dweblogic.wsee.useRequestHost=true",
+                     "-DAPP_ROOT=/opt/wl12c/domains/audit/applications",
+                     "-DAUDIT_ROOT=/opt/wl12c/domains/audit/applications/audit",
+                     "-DAWS_ROOT=/opt/wl12c/domains/audit/applications/auditws"
+                  ]
+               },
+               "logging": {
+                  "log_file_name": "logs/auditAs01.%yyyy%%MM%%dd%-%k%%mm%.log",
+                  "rotation_type": "byTime",
+                  "rotation_file_size": "5000",
+                  "begin_rotation_time": "23:59",
+                  "rotation_interval": "24",
+                  "number_of_files_limited": "true",
+                  "file_count": "125"
+               }
+            },
+            {
+               "name": "auditAs02",
+               "host": "saedev02",
+               "port": "7122",
+               "type": "managed",
+               "machine": {
+                  "build_mode": "online",
+                  "name": "auditHostAs02",
+                  "host": "saedev02",
+                  "port": "27122",
+                  "protocol": "SSL",
+                  "type": "UnixMachine"
+               },
+               "server_start": {
+                  "arguments": [
+                     "-Djava.security.egd=file:/dev/./urandom",
+                     "-Dweblogic.wsee.useRequestHost=true",
+                     "-DAPP_ROOT=/opt/wl12c/domains/audit/applications",
+                     "-DAUDIT_ROOT=/opt/wl12c/domains/audit/applications/audit",
+                     "-DAWS_ROOT=/opt/wl12c/domains/audit/applications/auditws"
+                  ]
+               },
+               "logging": {
+                  "log_file_name": "logs/auditAs02.%yyyy%%MM%%dd%-%k%%mm%.log",
+                  "rotation_type": "byTime",
+                  "rotation_file_size": "5000",
+                  "begin_rotation_time": "23:59",
+                  "rotation_interval": "24",
+                  "number_of_files_limited": "true",
+                  "file_count": "125"
+               }
+            }
+         ]
+      }
+   },
+   "deployments": [
+      {
+         "name": "auditApp",
+         "path": "/opt/wl12c/domains/audit/applications/audit/auditApp.ear",
+         "stage_mode": "nostage",
+         "targets": [
+            "auditCluster"
+         ]
+      },
+      {
+         "name": "auditservice",
+         "path": "/opt/wl12c/domains/audit/applications/auditws/auditservice.ear",
+         "stage_mode": "nostage",
+         "targets": [
+            "auditCluster"
+         ]
+      }
+   ],
+   "data_sources": [
+      {
+         "jdbc_name": "CommonDataSource",
+         "jndi_name": "weblogic.commonDataSource",
+         "driver": "oracle.jdbc.OracleDriver",
+         "two_phase_commit": "None",
+         "username": "RUSAUDIT",
+         "password": "rusauditd",
+         "database_name": "RUSD",
+         "database_host": "10.77.6.15",
+         "database_port": "1521",
+         "url": "jdbc:oracle:thin:@10.77.6.15:1521:RUSD",
+         "test_table_name": "SQL SELECT 1 FROM DUAL",
+         "properties": [
+            {
+               "key": "user",
+               "value": "RUSAUDIT"
+            }
+         ]
+      },
+      {
+         "jdbc_name": "rusCommonXADatasource",
+         "jndi_name": "rusCommonXADatasource",
+         "driver": "oracle.jdbc.xa.client.OracleXADataSource",
+         "two_phase_commit": "TwoPhaseCommit",
+         "username": "RUSAUDIT",
+         "password": "rusauditd",
+         "database_name": "RUSD",
+         "database_host": "10.77.6.15",
+         "database_port": "1521",
+         "url": "jdbc:oracle:thin:@10.77.6.15:1521:RUSD",
+         "test_table_name": "SQL SELECT 1 FROM DUAL",
+         "properties": [
+            {
+               "key": "user",
+               "value": "RUSAUDIT"
+            }
+         ]
+      }
+   ],
+   "security_realms": [
+      {
+         "name": "myrealm",
+         "provider": {
+            "authentications": [
+               {
+                  "mode": "edit",
+                  "name": "DefaultAuthenticator",
+                  "control_flag": "SUFFICIENT"
+               },
+               {
+                  "name": "IPlanetAuthenticator",
+                  "type": "weblogic.security.providers.authentication.IPlanetAuthenticator",
+                  "control_flag": "SUFFICIENT",
+                  "host": "10.77.30.50",
+                  "port": "3899",
+                  "principal": "cn=Directory Manager",
+                  "password": "rusadmin",
+                  "user_base_dn": "ou=people,dc=mto,dc=gov,dc=on,dc=ca",
+                  "group_base_dn": "ou=groups,dc=mto,dc=gov,dc=on,dc=ca"
+               }
+            ],
+            "authorizations": [
+               {
+                  "name": "DefaultAuthorizer",
+                  "type": "weblogic.security.providers.authorization.DefaultAuthorizer"
+               }
+            ],
+            "role_mappings": [
+               {
+                  "name": "DefaultRoleMapper",
+                  "type": "weblogic.security.providers.authorization.DefaultRoleMapper"
+               }
+            ],
+            "auditings": [
+               {
+                  "name": "DefaultAuditor",
+                  "type": "weblogic.security.providers.audit.DefaultAuditor"
+               }
+            ],
+            "keystores": [
+               {
+                  "name": "DefaultKeyStore",
+                  "type": "weblogic.security.providers.pk.DefaultKeyStore"
+               }
+            ]
+         }
+      }
+   ],
+   "persistent_stores": [
+      {
+         "name": "auditAs01FileStore",
+         "directory": "/tmp",
+         "target": {
+            "name": "auditAs01",
+            "type": "Servers"
+         }
+      },
+      {
+         "name": "auditAs02FileStore",
+         "directory": "/tmp",
+         "target": {
+            "name": "auditAs02",
+            "type": "Servers"
+         }
+      }
+   ],
+   "messaging": {
+      "jms_servers": [
+         {
+            "name": "auditAs01JMSServer",
+            "persistent_store": {
+               "name": "auditAs01FileStore",
+               "type": "FileStores"
+            },
+            "target": {
+               "name": "auditAs01",
+               "type": "Servers"
+            }
+         },
+         {
+            "name": "auditAs02JMSServer",
+            "persistent_store": {
+               "name": "auditAs02FileStore",
+               "type": "FileStores"
+            },
+            "target": {
+               "name": "auditAs02",
+               "type": "Servers"
+            }
+         }
+      ],
+      "jms_modules": [
+         {
+            "name": "auditSystemModule",
+            "sub_deployments": [
+               {
+                  "name": "auditGroup",
+                  "targets": [
+                     {
+                        "name": "auditAs01JMSServer",
+                        "type": "JMSServers"
+                     },
+                     {
+                        "name": "auditAs02JMSServer",
+                        "type": "JMSServers"
+                     }
+                  ]
+               }
+            ],
+            "targets": [
+               {
+                  "name": "auditCluster",
+                  "type": "Clusters"
+               }
+            ],
+            "uniform_distribute_queues": [
+               {
+                  "name": "auditLogQueue",
+                  "jndi_name": "weblogic.jms.auditLogQueue",
+                  "sub_deployment_name": "auditGroup"
+               },
+               {
+                  "name": "emailQueue",
+                  "jndi_name": "common.jms.emailQueue",
+                  "sub_deployment_name": "auditGroup"
+               },
+               {
+                  "name": "errorLogQueue",
+                  "jndi_name": "weblogic.jms.errorLogQueue",
+                  "sub_deployment_name": "auditGroup"
+               },
+               {
+                  "name": "eventLogQueue",
+                  "jndi_name": "weblogic.jms.eventLogQueue",
+                  "sub_deployment_name": "auditGroup"
+               }
+            ],
+            "connection_factories": [
+               {
+                  "name": "emailConnectionFactory",
+                  "jndi_name": "common.jms.emailConnectionFactory",
+                  "default_target_enabled": "true"
+               },
+               {
+                  "name": "logConnectionFactory",
+                  "jndi_name": "weblogic.jms.logConnectionFactory",
+                  "default_target_enabled": "true"
+               }
+            ]
+         }
+      ]
+   }
+}

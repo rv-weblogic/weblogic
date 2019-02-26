@@ -1,0 +1,13 @@
+- include_tasks: common.yml
+  tags: always
+
+- include_tasks: start.yml
+  tags: start
+
+- include_tasks: stop.yml
+  tags: stop
+
+- block:
+   - include_tasks: stop.yml
+   - include_tasks: start.yml
+  tags: restart

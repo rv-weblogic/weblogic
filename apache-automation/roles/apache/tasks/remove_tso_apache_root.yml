@@ -1,0 +1,8 @@
+---
+
+- name: remove tso_apache_root like /web
+  # dest_app_static_content_unzipped_final is like: /var/www/html/edtW 
+  file:
+  # hard coded to /web for now in case {{ tso_apache_root }} is / ; added checking in the future then change to variable
+    path: "/web"
+    state: absent

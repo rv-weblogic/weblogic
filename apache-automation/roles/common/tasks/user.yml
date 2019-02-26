@@ -1,0 +1,20 @@
+---
+- name: Ensure group exists if not it will create it.
+  group: name={{app_group}} state=present system=yes
+  when: app_user_create | default(False) == True
+
+- name: Create base directory
+  file: path={{app_dir}} state=directory
+  
+- name: Add users | create users, shell, home dirs
+  user: name={{app_user}} shell=/bin/bash createhome=yes group={{app_group}} home={{app_dir}}/{{app_user}} comment='create with ansible'
+  when: app_user_create | default(False) == True
+  
+- name: Password creation on app_user
+  shell: echo {{app_user_pwd}} | passwd --stdin {{app_user}}
+  when: app_user_create | default(False) == True
+  
+- name: Changing ownership of mount point
+  file: path={{app_dir}} owner={{app_user}} group={{app_group}} mode=0755
+  when: app_user_create | default(False) == True
+         

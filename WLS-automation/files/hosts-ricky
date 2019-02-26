@@ -1,0 +1,8 @@
+[ricky_admin] 
+sdcgisazapmdw22 ansible_host=10.193.176.60
+
+[ricky_as01] 
+sdcgisazapmdw22 ansible_host=10.193.176.60
+
+[ricky_as02] 
+sdcgisazapmdw23 ansible_host=10.193.176.61

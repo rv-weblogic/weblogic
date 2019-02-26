@@ -1,0 +1,48 @@
+connect('{{ weblogic_admin_user }}','{{ weblogic_admin_password }}', '{{ weblogic_admin_url }}')
+
+edit()
+startEdit()
+
+# create the machine for the managed server
+cd('/')
+cmo.createUnixMachine('{{ weblogic_servers[server].machine_name }}')
+cd('/Machines/{{ weblogic_servers[server].machine_name }}/NodeManager/{{ weblogic_servers[server].machine_name }}')
+cmo.setListenAddress('{{ weblogic_servers[server].node_manager_address }}')
+cmo.setListenPort({{ weblogic_servers[server].node_manager_port }})
+
+# create the server
+cd('/')
+cmo.createServer('{{ weblogic_servers[server].instance_name }}')
+cd('/Servers/{{ weblogic_servers[server].instance_name }}')
+cmo.setListenAddress('{{ weblogic_servers[server].instance_address }}')
+cmo.setListenPort({{ weblogic_servers[server].instance_port }})
+cmo.setCluster(getMBean('/Clusters/{{ weblogic_cluster }}'))
+cmo.setMachine(getMBean('/Machines/{{ weblogic_servers[server].machine_name }}'))
+cd('/Servers/{{ weblogic_servers[server].instance_name }}/ServerStart/{{ weblogic_servers[server].instance_name }}')
+# below is different from app to another app please replace accordingly ***
+cmo.setArguments('-Djava.security.egd=file:/dev/./urandom -Dweblogic.wsee.useRequestHost=true -DAPP_ROOT={{ domain_account.applications }} -D{{ name_prefix|upper }}_ROOT={{ domain_account.applications }}/{{ name_prefix }} -DAWS_ROOT={{ domain_account.applications }}/{{ name_prefix }}ws ')
+cd('/Servers/{{ weblogic_servers[server].instance_name }}/Log/{{ weblogic_servers[server].instance_name }}')
+cmo.setRotationType('byTime')
+cmo.setRotationTime('23:59')
+cmo.setFileCount(125)
+cmo.setFileName('logs/{{ weblogic_servers[server].instance_name }}.%yyyy%%MM%%dd%-%k%%mm%.log')
+
+# create the filestore
+cd('/')
+cmo.createFileStore('{{ weblogic_servers[server].file_store }}')
+cd('/FileStores/{{ weblogic_servers[server].file_store }}')
+cmo.setDirectory('/tmp')
+set('Targets',jarray.array([ObjectName('com.bea:Name={{ weblogic_servers[server].instance_name }},Type=Server')], ObjectName))
+
+# create the jms server
+cd('/')
+cmo.createJMSServer('{{ weblogic_servers[server].jms_server }}')
+cd('/JMSServers/{{ weblogic_servers[server].jms_server }}')
+cmo.setPersistentStore(getMBean('/FileStores/{{ weblogic_servers[server].file_store }}'))
+set('Targets',jarray.array([ObjectName('com.bea:Name={{ weblogic_servers[server].instance_name }},Type=Server')], ObjectName))
+
+save()
+activate()
+
+disconnect()
+exit()

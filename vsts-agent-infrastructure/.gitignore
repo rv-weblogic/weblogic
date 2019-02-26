@@ -1,0 +1,6 @@
+
+# Module directory
+.docker/
+.terraform/
+
+*.tfstate*

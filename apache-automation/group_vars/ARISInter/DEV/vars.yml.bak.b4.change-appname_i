@@ -1,0 +1,39 @@
+
+# notice this is set in all_apache_wlplugin.yml :  apache_source_root: /etc/ansible/apache_source/ 
+
+
+# on ansible server:
+app_static_content_zip_file: arisWebW_StaticContent.zip
+src_app_static_content_zip_dir: /etc/ansible/apache_source/ApacheARIS_Inter/
+
+# on target Apache server:
+dest_app_static_content_zip_dir: /apache/staging/ARISInter/
+
+#dest_app_static_content_zip_file: /apache/staging/ARISInter/arisWebW_StaticContent.zip
+dest_app_static_content_unzipped_staging: /apache/staging/ARISInter/
+path_to_actual_content: arisW/content
+dest_app_static_content_unzipped_final: /var/www/html/edtW
+
+
+# on ansible server
+# src_cert_path: /etc/ansible/apache_source//ApacheARIS_Inter/src/httpd-ssl/certs/
+src_cert_path: "{{ apache_source_root }}/ApacheARIS_Inter/src/httpd-ssl/certs/"
+src_cert_file: www.test.apps.rus.mto.gov.on.ca.crt.pem
+src_key_path: "{{ apache_source_root }}/ApacheARIS_Inter/src/httpd-ssl/private"
+src_key_file: www.test.apps.rus.mto.gov.on.ca.key.pem
+# on target Apache server:
+dest_cert_path: /etc/pki/tls/certs/
+dest_cert_file: "{{ src_cert_file }}"
+dest_key_path: /etc/pki/tls/private/
+dest_key_file: "{{ src_key_file }}"
+
+
+#src: /etc/ansible/apache_source/ApacheARIS_Inter/for_httpd_conf.d/ # this will have ARIS_http.conf and ssl.conf
+src_httd_conf_d_dir: "{{ apache_source_root }}/ApacheARIS_Inter/for_httpd_conf.d/"
+#dest: /etc/httpd/conf.d
+dest_httd_conf_d_dir: /etc/httpd/conf.d
+
+#src: /etc/ansible/apache_source/ApacheARIS_Inter/src/
+src_app_I_dir: "{{ apache_source_root }}/ApacheARIS_Inter/src/"
+#dest: /opt/app-root/src/tsobin #this must match location of passphrase.sh in ssl.conf 
+dest_app_I_dir: /opt/app-root/src/

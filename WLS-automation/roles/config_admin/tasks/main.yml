@@ -1,0 +1,45 @@
+---
+
+- include_tasks: common.yml
+
+- block:
+    # create domain offline
+    - include_tasks: create_domain.yml
+      when: task_type | default("") == "create_domain"
+    # configure add machine and set security/general online 
+    - include_tasks: add_machine.yml
+      when: task_type | default("") == "add_machine"
+    # configure cluster online
+    - include_tasks: config_cluster.yml
+      when: task_type | default("") == "config_cluster"
+    # configure admin miscellaneous settings online
+    - include_tasks: config_misc.yml        
+      when: task_type | default("") == "config_misc"
+    # deploy apps
+    - include_tasks: deploy.yml        
+      when: task_type | default("") == "deploy"
+    # config files
+    - include_tasks: config_files.yml        
+      when: task_type | default("") == "config_files"
+  when: server | default("") == "admin"
+
+- include_tasks: common_admin.yml
+  when: task_type | default("") == "start_admin" or task_type | default("") == "stop_admin" or task_type | default("") == "restart_admin"
+
+- block: 
+    # start admin
+    - include_tasks: start_admin.yml
+      when: task_type | default("") == "start_admin"
+    # stop admin
+    - include_tasks: stop_admin.yml
+      when: task_type | default("") == "stop_admin"
+    # restart admin
+    - block:
+        - include_tasks: stop_admin.yml
+        - include_tasks: start_admin.yml
+      when: task_type | default("") == "restart_admin"
+    # clean 
+    - include_tasks: clean.yml
+      when: task_type| default("") == "clean"
+  when: server | regex_search("^a.+")
+  

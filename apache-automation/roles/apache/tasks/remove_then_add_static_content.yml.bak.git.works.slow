@@ -1,0 +1,67 @@
+- file:
+    path: '{{ item }}'
+    state: directory
+    mode: 0755
+  with_items:
+    - "{{ dest_app_static_content_zip_dir }}"
+
+
+
+# to be removed simulate harvest checkout by just coping file; likely this will be replace by harvest checkout scripts
+#- name: copy .zip from local to Apache
+#  copy: 
+#    # #hard code example: src: /etc/ansible/apache_source/ApacheARIS_Inter/arisWebW_StaticContent.zip
+#    src: "{{ src_app_static_content_zip_dir }}/{{ app_static_content_zip_file }}"
+#    #hard code example: dest: /apache/staging/ARISInter/
+#    dest: "{{ dest_app_static_content_zip_dir }}"
+
+- name: Create temporary staging directory for git
+  register: temp_dir
+  tempfile:
+    state: directory
+
+- name: Get the code from VSTS with git
+  git:
+    repo: "{{ apache_git_repo }}"
+    version: "{{ apache_git_head }}"
+    dest: "{{ temp_dir.path }}"
+
+# simulate harvest checkout by just coping file; likely this will be replace by harvest checkout scripts
+- name: copy .zip from git temp location to staging
+  copy: 
+    # #hard code example: src: /etc/ansible/apache_source/ApacheARIS_Inter/arisWebW_StaticContent.zip
+    #src: "{{ src_app_static_content_zip_dir }}/{{ app_static_content_zip_file }}"
+    src: "{{ temp_dir.path }}/{{ app_path_on_repo }}/{{ app_static_content_zip_file }}"
+
+#####end-rashid##############
+
+    #hard code example: dest: /apache/staging/ARISInter/
+    dest: "{{ dest_app_static_content_zip_dir }}"
+    remote_src: yes
+
+# prepare static content for this app. assume .zip is already on the server, likely by checkout process from Harvest.
+- name: unzip static content to Apache location
+  unarchive: 
+    src: "{{ dest_app_static_content_zip_dir }}/{{ app_static_content_zip_file }}"
+    #hard code example: dest: /apache/staging/ARISInter/maybe_also_add_date # result will be like /apache/staging/ARISInter/arisW/content/...
+    dest: "{{ dest_app_static_content_unzipped_staging }}"
+    remote_src: yes
+    
+- name: remove existing static content  
+  # dest_app_static_content_unzipped_final is like: /var/www/html/edtW 
+  #command: rm -rf "{{ dest_app_static_content_unzipped_final }}" ;
+  file:
+    path: "{{ dest_app_static_content_unzipped_final }}"
+    state: absent
+      
+#- name: make sure {{ dest_app_static_content_unzipped_final }} exists
+#  file:
+#    path: "{{ dest_app_static_content_unzipped_final }}"
+#    state: directory
+
+
+- name: copy dest_app_static_content_unzipped_staging to final destination (or just use a link) to be decided
+#  command: "cp -pr /apache/staging/ARISInter//arisW/content/ /var/www/html/edtW/"
+  command:  cp -pr "{{ dest_app_static_content_unzipped_staging }}{{ path_to_actual_content }}"  "{{ dest_app_static_content_unzipped_final }}"
+
+  

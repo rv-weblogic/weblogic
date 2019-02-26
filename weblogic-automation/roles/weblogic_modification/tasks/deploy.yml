@@ -1,0 +1,40 @@
+  - name: Copy the private SSH key to access git
+    copy:
+        src: "{{ git_server.ssh_private_key }}"
+        dest: "{{ domain_account.home }}/.ssh/id_rsa"
+        mode: 0600
+
+  - name: Discover the Git host key
+    register: git_host_key
+    command: /usr/bin/ssh-keyscan -p {{ git_server.port }} -t ecdsa {{ git_server.host }}
+    changed_when: false
+
+  - name: Expect the presence of ~/.ssh/known_hosts
+    register: touch_known_hosts
+    changed_when:  touch_known_hosts.diff.before.state != "file"
+    file:
+        path: "{{ domain_account.home }}/.ssh/known_hosts"
+        state: touch
+
+  - name: Expect the presence of Admin host key
+    lineinfile:
+        path: "{{ domain_account.home }}/.ssh/known_hosts"
+        state: present
+        regexp: '^\[{{ git_server.host }}\]\:{{ git_server.port }}'
+        line: '{{ git_host_key.stdout }}'
+
+  - name: Download the deployment package from git
+    git:
+        repo: "{{ git_repo.path }}"
+        version: "{{ git_repo.head }}"
+        dest: "{{ staging_folder.domain }}/deployment"
+
+  - name: Copy over the deployment package
+    copy_r:
+        remote_src: yes
+        src: "{{ staging_folder.domain }}/deployment/"
+        dest: "{{ domain_account.home }}/"
+
+  - name: Deploy {{ weblogic_domain_name }} domain
+    command: "{{ staging_folder.domain }}/{{ weblogic_automata_binary }} deploy {{ staging_folder.domain }}/{{ weblogic_domain_name }}.json"
+

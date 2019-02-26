@@ -1,0 +1,60 @@
+---
+
+- name: Create UNIX group ({{ weblogic_account.group }})
+  register: linuxgroup
+  group:
+     name: "{{ weblogic_account.group }}"
+     gid: "{{ weblogic_account.gid }}"
+     state: present
+     
+- name: Create UNIX user ({{ weblogic_account.username }})
+  when: linuxgroup is success
+  user:
+      name: "{{ weblogic_account.username }}"
+      home: "{{ weblogic_account.home }}"
+      uid: "{{ weblogic_account.uid }}"
+      group: "{{ weblogic_account.group }}"
+      shell: "{{ weblogic_account.shell }}"
+      password: "{{ weblogic_admin_password | password_hash('sha512') }}"
+
+- name: Add "ll" alias in bashrc
+  lineinfile: 
+      dest: "{{ weblogic_account.home }}/.bashrc" 
+      line: alias ll="ls -laF"
+
+- name: Add USER_MEM_ARGS to use random in bashrc
+  lineinfile: 
+      dest: "{{ weblogic_account.home }}/.bashrc" 
+      line: export USER_MEM_ARGS="-Djava.security.egd=file:/dev/./urandom"
+
+- name: Add PS1 in bashrc
+  lineinfile: 
+      dest: "{{ weblogic_account.home }}/.bashrc" 
+      line: PS1='\[\e[1;32m\][\u@\h \w]\n\$\[\e[0m\]'
+
+- name: Add source Env in bashrc
+  lineinfile: 
+      dest: "{{ weblogic_account.home }}/.bashrc" 
+      line: source {{ weblogic_install.oracle_home }}/wlserver/server/bin/setWLSEnv.sh
+      
+- name: Add umask 0022
+  lineinfile: 
+      dest: "{{ weblogic_account.home }}/.bashrc" 
+      line: umask 0022                  
+
+- name: Fix home directory permission ({{ weblogic_account.home }})
+  file:
+      dest: "{{ weblogic_account.home }}"
+      state: directory
+      mode: 0770
+
+- name:     Allow {{weblogic_account.username}} to sudoers
+  lineinfile:
+    dest:         /etc/sudoers
+    state:        present
+    regexp:       '^{{weblogic_account.username}}'
+    line:         '{{weblogic_account.username}} ALL=(ALL) NOPASSWD: ALL'
+    validate:     'visudo -cf %s'   
+                 
+      
+    

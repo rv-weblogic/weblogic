@@ -1,0 +1,83 @@
+### !!! many of the vars should be moved to vars/main.yml
+
+
+# on ansible server:
+app_static_content_zip_file: auditWeb_StaticContent.zip
+src_app_static_content_zip_dir: "{{ apache_source_root }}/{{ appname_i }}"
+#src_app_static_content_zip_dir: files
+
+# on target Apache server:
+dest_app_static_content_zip_dir: "{{ tso_apache_root }}/{{ env_dtup }}/staging/{{ appname_i }}/"
+
+#dest_app_static_content_zip_file: /apache/staging/ARISInter/arisWebW_StaticContent.zip
+#{{ env_dtup }} is for in case need more than one env on same Linux server
+dest_app_static_content_unzipped_staging: "{{ tso_apache_root }}/{{ env_dtup }}/staging/{{ appname_i }}/"
+path_to_actual_content: auditWeb_StaticContent/audit/content/
+# next: change to something like /apache/app_name/html/context_root , also need to change httpd.conf to match this
+dest_app_static_content_unzipped_final: "{{ tso_apache_root }}/{{ env_dtup }}/{{ appname_i }}/var/www/html/audit"
+
+
+# on ansible server
+# old src_cert_path: /etc/ansible/apache_source//ApacheARIS_Inter/src/httpd-ssl/certs/
+#src_cert_path: "{{ apache_source_root }}/{{ appname_i }}/src/httpd-ssl/certs/"
+# new src_cert_path: /etc/ansible/apache_source/tso_managed/src/httpd-ssl/certs/
+# 20180622 notice src_cert_path not by app, but destination is. change src_key_file for that app if needed.
+src_cert_path: "{{ apache_source_root }}/tso_managed/{{ env_dtup }}/src/httpd-ssl/certs/" 
+src_cert_file: www.test.apps.rus.mto.gov.on.ca.crt.pem
+src_key_path: "{{ apache_source_root }}/tso_managed/{{ env_dtup }}/src/httpd-ssl/private"
+src_key_file: www.test.apps.rus.mto.gov.on.ca.key.pem
+# on target Apache server:
+#old: dest_cert_path: /etc/pki/tls/certs/ new: /apache//etc/pki/tls/certs/ change ssl.conf to match
+dest_cert_path: "{{ tso_apache_root }}/{{ env_dtup }}/{{ appname_i }}/etc/pki/tls/certs/"
+dest_cert_file: "{{ src_cert_file }}"
+dest_key_path: "{{ tso_apache_root }}/{{ env_dtup }}/{{ appname_i }}/etc/pki/tls/private/"
+dest_key_file: "{{ src_key_file }}"
+
+# on target Apache server:
+apache_server_root_for_app: "{{ tso_apache_root }}/{{ env_dtup }}/{{ appname_i }}/etc/httpd"
+
+#src: /etc/ansible/apache_source/ApacheARIS_Inter/for_httpd_conf.d/ # this will have ARIS_http.conf and ssl.conf
+# 20180622 replacing with template soon, after that , no need src_httd_conf_d_dir
+src_httd_conf_d_dir: "{{ apache_source_root }}/{{ appname_i }}/for_httpd_conf.d/"
+
+#dest: /apache/DEV/AUDITIntra/httpd/conf
+dest_httpd_conf_dir: "{{ tso_apache_root }}/{{ env_dtup }}/{{ appname_i }}/etc/httpd/conf"
+#dest: /apache/DEV/AUDITIntra/httpd/conf.d
+dest_httpd_conf_d_dir: "{{ tso_apache_root }}/{{ env_dtup }}/{{ appname_i }}/etc/httpd/conf.d"
+
+#src: /etc/ansible/apache_source/tso_managed/DEV/src/
+src_app_I_dir: "{{ apache_source_root }}/tso_managed/{{ env_dtup }}/src"
+src_tso_managed_env_dtup_dir: "{{ apache_source_root }}/tso_managed/{{ env_dtup }}/src"
+#dest: /opt/app-root/src/tsobin #this must match location of passphrase.sh in ssl.conf 
+#dest_app_I_dir: /opt/app-root/
+#20180622 in case different passphrase.sh needed, use different name at source and add one more var like passphrase_script_name, then update ssl.conf.j2 template 
+dest_tso_managed_env_dtup_dir: "{{ tso_apache_root }}/{{ env_dtup }}/"
+
+
+###
+app_path_on_repo: roles/apache/files/apache_sourceR2/AUDITIntra
+
+########### for template start
+http_port: 57120
+https_port: 47120
+
+# the following likely needs to be overwritten for different backends
+wl_server1_host: saedev01
+wl_server1_port: 7121
+wl_server2_host: saedev02
+wl_server2_port: 7122
+ 
+WebLogicCluster: "{{ wl_server1_host }}:{{ wl_server1_port }},{{ wl_server2_host }}:{{ wl_server2_port }}"
+
+########### for template end
+
+# for /etc/hosts file update
+wl_server1_host_line_in_hosts_file: 10.193.176.60 sdcgisazapmdw22 sdcgisazapmdw22.cihs.ad.gov.on.ca saedev01
+wl_server2_host_line_in_hosts_file: 10.193.176.61 sdcgisazapmdw23 sdcgisazapmdw23.cihs.ad.gov.on.ca saedev02
+
+
+# test_merge is a dummy var
+test_merge: 201807061428
+
+
+

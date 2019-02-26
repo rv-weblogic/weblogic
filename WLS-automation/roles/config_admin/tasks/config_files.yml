@@ -1,0 +1,67 @@
+---
+
+- name: insert the machine on config.xml
+  lineinfile:
+    path: "{{ domain_account.home }}/config/config.xml"
+    insertafter: "<node-manager>"
+    line: "<name>{{ weblogic_servers[server].machine_name }}</name>"    
+     
+- name: change username on config-nodemanager.xml
+  lineinfile:
+    path: "{{ domain_account.home }}/init-info/config-nodemanager.xml"
+    regexp: "<nod:userName>"
+    line: "<nod:userName>{{ weblogic_admin_user }}</nod:userName>"    
+            
+- name: update the javahome on nodemanager-properties.xml
+  lineinfile:
+    path: "{{ domain_account.home }}/init-info/nodemanager-properties.xml"
+    regexp: "<javaHome>"
+    line: "<javaHome>{{ jdk_install.symlink }}</javaHome>"    
+
+- name: update the listenaddress on nodemanager-properties.xml
+  lineinfile:
+    path: "{{ domain_account.home }}/init-info/nodemanager-properties.xml"
+    regexp: "<listenAddress>"
+    line: "<listenAddress>{{ weblogic_servers[server].instance_address }}</listenAddress>"    
+
+- name: update the listenport on nodemanager-properties.xml
+  lineinfile:
+    path: "{{ domain_account.home }}/init-info/nodemanager-properties.xml"
+    regexp: "<listenPort>"
+    line: "<listenPort>{{ weblogic_servers[server].node_manager_port }}</listenPort>"
+  
+- name: update the javahome on domain-info.xml
+  lineinfile:
+    path: "{{ domain_account.home }}/init-info/domain-info.xml"
+    regexp: "<domain-info"
+    line: '<domain-info javahome="{{ jdk_install.symlink }}" appdir="" mwhome="{{ weblogic_install.oracle_home }}" messagingType="WLSJMS" isManagedDomain="false" xmlns="http://xmlns.oracle.com/weblogic/domain-info">' 
+ 
+- name: startscript.xml
+  template: 
+      src: startscript.xml
+      dest: "{{ domain_account.home }}/init-info/startscript.xml"        
+
+- name: update the java_home on tokenvalue.properties
+  lineinfile:
+    path: "{{ domain_account.home }}/init-info/tokenValue.properties"
+    regexp: "@JAVA_HOME"
+    line: "@JAVA_HOME={{ jdk_install.symlink }}"
+
+- name: update the sun_java_home on tokenvalue.properties
+  lineinfile:
+    path: "{{ domain_account.home }}/init-info/tokenValue.properties"
+    regexp: "@SUN_JAVA_HOME="
+    line: "@SUN_JAVA_HOME={{ jdk_install.symlink }}"
+
+- name: update the nodemgr_port on tokenvalue.properties
+  lineinfile:
+    path: "{{ domain_account.home }}/init-info/tokenValue.properties"
+    regexp: "@NODEMGR_PORT="
+    line: "@NODEMGR_PORT={{ weblogic_servers[server].node_manager_port }}"
+
+- name: update the nodemgr_host on tokenvalue.properties
+  lineinfile:
+    path: "{{ domain_account.home }}/init-info/tokenValue.properties"
+    regexp: "@NODEMGR_HOST="
+    line: "@NODEMGR_HOST={{ weblogic_servers[server].instance_address }}"
+            

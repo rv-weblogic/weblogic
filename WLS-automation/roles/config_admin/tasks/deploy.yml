@@ -1,0 +1,47 @@
+---
+     
+- name:           Make sure destination directory exists 
+  file:
+      path:       "{{ staging_folder.domain }}/deployment/"
+      state:      directory
+      recurse:    yes
+
+- name:           Download ear app
+  get_url:
+    url:          "{{weblogic_app_url}}{{weblogic_app_file}}"
+    dest:         "{{ staging_folder.domain }}/deployment/{{ weblogic_app_file }}"
+    owner:        "{{ domain_account.username }}"
+    group:        "{{ domain_account.group }}"    
+    mode:         0755
+
+- name:           Extract ear app
+  unarchive:
+    src:          "{{ staging_folder.domain }}/deployment/{{ weblogic_app_file }}"
+    dest:         "{{ staging_folder.domain }}/deployment/"
+    copy:         no
+    
+- name:           Copy over the deployment package
+  # this is defined on the library/copy_r.py
+  # if the future version, recursive might be supported with just "copy" module
+  copy_r:
+      remote_src: yes
+      src:        "{{ staging_folder.domain }}/deployment/"
+      dest:       "{{ domain_account.home }}/"
+      
+- name: Expect {{ weblogic_servers[server].instance_address }} to be listening on {{ weblogic_servers[server].instance_port }}
+  wait_for:
+      host: "{{ weblogic_servers[server].instance_address }}"
+      port: "{{ weblogic_servers[server].instance_port }}"
+      state: started
+      timeout: "{{ timeout.admin }}"      
+  register: admin_listen
+  
+- block:    
+    - name: Deploy apps     
+      shell: source {{ weblogic_install.oracle_home }}/wlserver/server/bin/setWLSEnv.sh && java weblogic.Deployer -adminurl {{ weblogic_admin_url }} -username {{ weblogic_admin_user }} -password {{ weblogic_admin_password }} -deploy {{ item.path }}/{{ item.name }} -targets {{ weblogic_cluster }} -nostage
+      with_items: "{{ deploy_apps }}"
+  when: admin_listen.state == 'started'
+  
+- fail: 
+    msg: "The {{ weblogic_servers[server].instance_address }} is not listening on {{ weblogic_servers[server].instance_port }}"
+  when: admin_listen.state != 'started'  

@@ -1,0 +1,22 @@
+- name: make sure dest_location_WL_Plugin dir exists
+  file:
+    path: "{{ dest_location_WL_Plugin }}"
+    state: directory
+    mode: 0755
+   
+- name: unzip to get WLplugin lib folder
+  unarchive: 
+    src: "{{ source_url_WLPlugin_zip }}"
+    dest: "{{ dest_location_WL_Plugin }}"
+    remote_src: yes
+
+###ccc may need to use another module instead of lineinfile (replace instead of add)    
+- name: add variable like - export LD_LIBRARY_PATH=/opt/wlplugin/lib to .bash_profile
+  lineinfile: 
+    path: ~/.bash_profile
+    line: 'export LD_LIBRARY_PATH={{ dest_location_WL_Plugin_Lib }}'
+  
+- name: add variable like - export LD_LIBRARY_PATH=/opt/wlplugin/lib to .bashrc
+  lineinfile: 
+    path: ~/.bashrc
+    line: 'export LD_LIBRARY_PATH={{ dest_location_WL_Plugin_Lib }}'  

@@ -1,0 +1,7 @@
+WLS-automation/*.retry
+WLS-automation/*.zip
+WLS-automation/files/secret
+*.retry
+*.zip
+files/secret
+secret

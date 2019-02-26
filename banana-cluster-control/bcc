@@ -1,0 +1,9 @@
+#!/bin/env python
+'''
+Banana Cluster Control
+'''
+
+from lib.bcc import bcc
+
+if __name__ == '__main__':
+    bcc.main()

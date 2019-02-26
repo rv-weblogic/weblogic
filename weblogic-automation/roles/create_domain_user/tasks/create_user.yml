@@ -1,0 +1,63 @@
+  - name: Create UNIX group ({{ domain_account.group }})
+    register: linuxgroup
+    group:
+        name: "{{ domain_account.group }}"
+        gid: "{{ domain_account.gid }}"
+        state: present
+        
+  - name: Create UNIX user ({{ domain_account.username }})
+    when: linuxgroup is success
+    user:
+        name: "{{ domain_account.username }}"
+        home: "{{ domain_account.home }}"
+        uid: "{{ domain_account.uid }}"
+        group: "{{ domain_account.group }}"
+        shell: "{{ domain_account.shell }}"
+
+  - name: Add authorized_keys
+    authorized_key:
+        user: "{{ domain_account.username }}"
+        key: "{{ domain_account.ssh_pub_key }}"
+        state: present
+
+  - name: Add private SSH key 
+    copy:
+        src: "{{ domain_account.ssh_private_key }}"
+        dest: "{{ domain_account.home }}/.ssh/id_rsa"
+        mode: 0600
+        owner: "{{ domain_account.username }}"
+        group: "{{ domain_account.group }}"
+
+  - name: Add "ll" alias in bashrc
+    lineinfile: 
+        dest: "{{ domain_account.home }}/.bashrc" 
+        line: alias ll="ls -laF"
+
+
+  - name: Fix home directory permission ({{ domain_account.home }})
+    file:
+        dest: "{{ domain_account.home }}"
+        state: directory
+        mode: 0750
+
+  - name: Add {{ user_mem_args_key }} to use urandom in bashrc
+    lineinfile: 
+        state: present
+        path: "{{ domain_account.home }}/.bashrc" 
+        regexp: 'export {{ user_mem_args_key }}='
+        line: 'export {{ user_mem_args_key }}="{{ user_mem_args_value }}"'
+        
+  - name: Add JAVA_HOME environment variariables in bashrc
+    lineinfile: 
+        state: present
+        dest: "{{ domain_account.home }}/.bashrc"
+        regexp: 'export JAVA_HOME='
+        line: 'export JAVA_HOME="{{ jdk_install.symlink }}"'
+
+  - name: Add java/bin folder to path in bashrc
+    lineinfile: 
+        state: present
+        dest: "{{ domain_account.home }}/.bashrc"
+        regexp: 'export PATH='
+        line: 'export PATH=$JAVA_HOME/bin:$PATH'
+        

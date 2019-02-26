@@ -1,0 +1,7 @@
+  - name: Expect correct file ownership
+    tags: always
+    file:
+        path: "{{ domain_account.home }}"
+        owner: "{{ domain_account.uid }}"
+        group: "{{ domain_account.gid }}"
+        recurse: yes

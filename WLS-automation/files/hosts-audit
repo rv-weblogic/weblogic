@@ -1,0 +1,8 @@
+[audit_admin] 
+sdcgisazapmdw44 ansible_host=10.193.176.74 
+
+[audit_as01] 
+sdcgisazapmdw44 ansible_host=10.193.176.74 
+
+[audit_as02] 
+sdcgisazapmdw45 ansible_host=10.193.176.77 

@@ -1,0 +1,17 @@
+---
+
+- name: Expect Node Manager to be running
+  when: nm_listening.state is defined and nm_listening.state == "stopped" 
+  register: nm_start
+  shell: nohup ~/bin/startNodeManager.sh </dev/null >/dev/null 2>&1 &
+  environment:
+      USER_MEM_ARGS: "{{ weblogic_servers[server].user_mem_args_value }}"
+  
+- name: Expect Node Manager to be listening
+  when: nm_start.changed
+  register: nm_start_result
+  wait_for:
+      host: "{{ weblogic_servers[server].node_manager_address }}"
+      port: "{{ weblogic_servers[server].node_manager_port }}"
+      state: started
+      timeout: "{{ timeout.node_manager }}"

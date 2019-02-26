@@ -1,0 +1,11 @@
+
+# to be added: check if apache is running
+
+# only run when apache is NOT running. also mark changed_when to true if start is needed.
+- name: using shell to start apache
+  shell: /usr/sbin/httpd -k start -f "{{ dest_httpd_conf_dir }}/httpd.conf"
+  environment: "{{ shell_env_vars }}"
+    #LD_LIBRARY_PATH: /opt/wlplugin/lib
+  register: start_apache
+
+- debug: var=start_apache.stdout_lines

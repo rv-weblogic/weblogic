@@ -1,0 +1,27 @@
+---
+
+- name: Discover Node Manager's listening state
+  register: nm_listening
+  failed_when: no
+  wait_for:
+      host: "{{ weblogic_servers[server].node_manager_address }}"
+      port: "{{ weblogic_servers[server].node_manager_port }}"
+      state: stopped
+      timeout: 2
+
+- name: Calling helper to start Node Manager (first try)
+  include_tasks: start_nm_helper.yml
+
+- name: Calling helper to start Node Manager (second try)
+  when: nm_start_result.failed is defined and nm_start_result.failed == true
+  include_tasks: start_nm_helper.yml
+
+- name: Calling helper to start node Manager (third try)
+  when: nm_start_result.failed is defined and nm_start_result.failed == true
+  include_tasks: start_nm_helper.yml
+  
+- name: Fail if Node Manager is still not listenting
+  when: (nm_start_result.failed is defined and nm_start_result.failed == true) or 
+        (nm_listening.state is defined and nm_listening.state != "stopped")
+  fail:
+      msg: "Node Manager is still down"

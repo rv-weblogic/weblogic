@@ -1,0 +1,24 @@
+---
+- name: variable precedence test
+  hosts: "{{ webservers }}"
+  tasks:
+    - include_vars:
+        file: "{{ item }}"
+      with_items:
+        # hope to move to vars/main.yml under the role # 
+        #- "group_vars/all/all_apache_wlplugin.yml"
+        #- "group_vars/{{ env }}/vault.yml" # likely will use "group_vars/{{ app_name }}/{{ env_dtup }}/vault.yml"
+        #- "group_vars/{{ env }}/vars.yml" # likely will use "group_vars/{{ app_name }}/{{ env_dtup }}/vars.yml"
+        #- roles/apache_wlplugin/vars/main.yml
+        - "group_vars/{{ appname_i }}/{{ env_dtup }}/vars.yml"
+
+- name: setup app static content
+  hosts: "{{ webservers }}"
+  #become: yes 
+  ### become_user: "{{ app_user }}"
+  become_user: "{{super_user}}"
+  any_errors_fatal: True
+  roles:
+    - apache
+  vars: 
+    remove_then_add_static_content: True

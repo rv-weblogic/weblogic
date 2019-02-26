@@ -1,0 +1,80 @@
+#  this task cannot be skipped for now even /etc/ansible/apache_source/ApacheARIS_Inter/src/ is copied in next task, because the destination is different. 
+# imporvement can be made if httpd conf related files directly reference to this file
+
+############### key store part
+- file:
+    path: '{{ item }}'
+    state: directory
+    mode: 0755
+  with_items:
+    - "{{ dest_cert_path }}"
+    - "{{ dest_key_path }}"
+    - "{{ dest_tso_managed_env_dtup_dir }}"
+
+    
+- name: copy front end cert file
+  copy:
+    #src: /etc/ansible/apache_source/ApacheARIS_Inter/src/httpd-ssl/certs/www.test.apps.rus.mto.gov.on.ca.crt.pem
+    src: "{{ src_cert_path }}/{{ src_cert_file }}"
+    #dest: /etc/pki/tls/certs/www.test.apps.rus.mto.gov.on.ca.crt.pem
+    dest: "{{ dest_cert_path }}/{{ dest_cert_file }}"
+    
+- name: copy front end key file
+  copy:
+    #src: /etc/ansible/apache_source/ApacheARIS_Inter/src/httpd-ssl/private/www.test.apps.rus.mto.gov.on.ca.key.pem
+    src: "{{ src_key_path }}/{{ src_key_file }}"
+    #dest: /etc/pki/tls/private/www.test.apps.rus.mto.gov.on.ca.key.pem
+    dest: "{{ dest_key_path }}/{{ dest_key_file }}"
+
+- name: copy apache_source/tso_managed/ env_dtup /src/ that includes tsobin/passphrase.sh for open key file
+  copy:
+    #src: /etc/ansible/apache_source/tso_managed/DEV/src/
+    src: "{{ src_tso_managed_env_dtup_dir }}"
+    #dest: /opt/app-root/src/ #this must match location of passphrase.sh in ssl.conf 
+    dest: "{{ dest_tso_managed_env_dtup_dir }}"
+    mode: 0740
+
+
+######################################################
+# following for conf files
+- file:
+    path: '{{ item }}'
+    state: directory
+    mode: 0755
+  with_items:
+    - "{{ apache_server_root_for_app }}/logs"
+    - "{{ apache_server_root_for_app }}/run"
+    - "{{ tso_apache_root }}/{{ env_dtup }}/{{ appname_i }}/var/www/cgi-bin/"
+
+- file:
+    src: /usr/lib64/httpd/modules
+    dest: "{{ apache_server_root_for_app }}/modules"
+    state: link
+    mode: 0755
+
+- name: copy some dir ( conf conf.d conf.modules.d ) from original /etc/httpd/ to apache_server_root_for_app
+  command: cp -pr /etc/httpd/conf /etc/httpd/conf.d /etc/httpd/conf.modules.d "{{ apache_server_root_for_app }}"
+
+#  this task cannot be skipped for now even /etc/ansible/apache_source/ApacheARIS_Inter/src/ is copied in next task, because the destination is different.
+- name: template app httpd conf files
+  template: 
+    #src: AUDITIntra/AUDITIntra_httd.conf.j2
+    src: "{{ appname_i }}/{{ appname_i }}_httpd.conf.j2"
+    #dest: /etc/httpd/conf.d
+    dest: "{{ dest_httpd_conf_d_dir }}/{{ appname_i }}_httpd.conf"
+
+- name: template out httpd.conf
+  template: 
+    src: httpd.conf.j2
+    dest: "{{ dest_httpd_conf_dir }}/httpd.conf"
+
+
+- name: template out ssl.conf
+  template: 
+    src: ssl.conf.j2
+    dest: "{{ dest_httpd_conf_d_dir }}/ssl.conf"
+    
+
+
+
+

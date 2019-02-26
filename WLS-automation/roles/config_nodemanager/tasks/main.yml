@@ -1,0 +1,19 @@
+---
+
+- include_tasks: common.yml
+  when: task_type | default("") != "nmenroll"
+
+- include_tasks: start_nodemanager.yml
+  when: task_type | default("") == "start_nodemanager"
+
+- include_tasks: stop_nodemanager.yml
+  when: task_type | default("") == "stop_nodemanager"
+
+- block:
+   - include_tasks: stop_nodemanager.yml
+   - include_tasks: start_nodemanager.yml
+  when: task_type | default("") == "restart_nodemanager"  
+
+- include_tasks: nmenroll.yml
+  when: task_type | default("") == "nmenroll"
+  

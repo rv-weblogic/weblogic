@@ -1,0 +1,16 @@
+  - name: Expect the correct value of JAVA_HOME in setDomainEnv.sh
+    when: clean_invoked | default(false) == false
+    replace:
+        path: "{{ setDomainEnv_sh }}"
+        regexp: '(.*)JAVA_HOME="[a-zA-Z0-9/_\.]+"'
+        replace: '\1JAVA_HOME="{{ jdk_install.symlink }}"'
+        
+  - name: Expect Node Manager to be listening
+    register: nm_check
+    when: clean_invoked | default(false) == false
+    wait_for:
+        host: "{{ weblogic_node_manager_address }}"
+        port: "{{ weblogic_node_manager_port }}"
+        state: started
+        timeout: 2
+        

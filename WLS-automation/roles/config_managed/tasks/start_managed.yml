@@ -1,0 +1,54 @@
+---
+
+- name: create folder servers/{{ weblogic_servers[server].instance_name }}/security/
+  file: 
+    path: "{{ domain_account.home }}/servers/{{ weblogic_servers[server].instance_name }}/security/"
+    state: directory
+    owner: "{{domain_account.username}}"
+    group: "{{domain_account.group}}"
+    mode: 0774
+    
+- name: Create boot.properties
+  template:
+    src: boot.properties.j2
+    dest: "{{ domain_account.home }}/servers/{{ weblogic_servers[server].instance_name }}/security/boot.properties"
+    owner: "{{domain_account.username}}"
+    group: "{{domain_account.group}}"
+    mode: 0774  
+
+- name: Expect Admin to be listening
+  wait_for:
+      host: "{{ weblogic_servers[weblogic_admin_prefix].instance_address }}"
+      port: "{{ weblogic_servers[weblogic_admin_prefix].instance_port }}"
+      state: started
+      timeout: 2
+
+- name: Expect the presence of the {{ script_start_managed }} script
+  template: 
+      src: "{{ script_start_managed }}"
+      dest: "{{ domain_account.home }}/{{ script_start_managed }}"
+            
+- name: Discover {{ weblogic_servers[server].instance_name }}'s listening state
+  register: managed_listening
+  failed_when: no
+  wait_for:
+      host: "{{ weblogic_servers[server].instance_address }}"
+      port: "{{ weblogic_servers[server].instance_port }}"
+      state: stopped
+      timeout: 2                   
+
+- name: Starting {{ weblogic_servers[server].instance_name }} ...
+  when: managed_listening.state is defined and managed_listening.state == "stopped"
+  register: managed_start
+  shell: "sudo {{ weblogic_install.oracle_home }}/wlserver/common/bin/wlst.sh {{ script_start_managed }}"
+  args:
+      executable: /bin/bash
+      chdir: "{{ domain_account.home }}"
+      
+- name: Expect {{ weblogic_servers[server].instance_name }} to be listening
+  when: managed_start.changed
+  wait_for:
+      host: "{{ weblogic_servers[server].instance_address }}"
+      port: "{{ weblogic_servers[server].instance_port }}"
+      state: started
+      timeout: "{{ timeout.managed }}"

@@ -1,0 +1,267 @@
+---
+
+# name_prefix: -is defined on init.yml-
+
+###################
+# install_weblogic
+###################
+weblogic_account:
+    username: weblogic
+    group: weblogic
+    home: /opt/wl12c
+    shell: /bin/bash
+    uid: 5001
+    gid: 5001
+
+staging_folder: 
+   weblogic: "{{ weblogic_account.home }}/.staging"
+   domain: "{{ domain_account.home }}/.staging"   
+
+jdk_package: 
+    name: server-jre-7u80-linux-x64.tar.gz
+    url: https://sdcdev01stal01ltcrus.blob.core.windows.net/tso/Midtier/Software/jdk1.7/server-jre-7u80-linux-x64.tar.gz
+    cksum_type: sha256
+    cksum_value: d0c822763bf3fc38d4b8966b8498628baec31d9b3ac596fc987dd89b6de92e02
+    
+
+weblogic_package:
+    name: wls_121200.jar
+    url: https://sdcdev01stal01ltcrus.blob.core.windows.net/tso/Midtier/Software/Weblogic12.1.2/wls_121200.jar
+    cksum_type: sha256
+    cksum_value: e6efe85f3aec005ce037bd740f512e23c136635c63e20e02589ee0d0c50c065c
+  
+#jdk_folder: "{{ weblogic_user_home }}/jdk1.7.0_80"
+#jdk_symlink: "{{ weblogic_user_home }}/jdk"
+
+jdk_install:
+    path:  "{{ weblogic_account.home }}/jdk1.7.0_80"
+    symlink:  "{{ weblogic_account.home }}/jdk"
+
+weblogic_install:
+    inventory_loc: "{{ weblogic_account.home }}/oraInventory"
+    oracle_home: "{{ weblogic_account.home }}/weblogic"
+    oracle_response: weblogic-silent.rsp
+    oracle_oraInst: oraInst.loc
+    domains: "{{ weblogic_account.home }}/domains"
+
+# weblogic_domains_path: "{{ weblogic_user_home }}/domains"
+
+##########
+# OTHERS
+##########
+
+weblogic_domain_name: "{{ name_prefix }}"
+
+domain_account:
+    username: "{{ weblogic_domain_name }}12" 
+    group: "{{ weblogic_account.group }}"
+    home: "{{ weblogic_install.domains}}/{{ weblogic_domain_name }}"
+    shell: /bin/bash
+    uid: "{{ unique_linux_uid }}"
+    gid: "{{ weblogic_account.gid }}"
+    applications: "{{ weblogic_install.domains}}/{{ weblogic_domain_name }}/applications"
+    nodemanager: "{{ weblogic_install.domains}}/{{ weblogic_domain_name }}/nodemanager"
+
+user_mem_args_key: USER_MEM_ARGS
+# staging_folder: "{{ domain_account.home }}/.staging"
+
+domain_config_xml: "{{ domain_account.home }}/config/config.xml"
+weblogic_node_manager_properties: "{{ domain_account.home }}/nodemanager/nodemanager.properties"
+
+timeout:
+    node_manager: 600
+    admin: 600
+    managed: 600
+    
+script_start_admin: start_admin.py
+script_stop_admin: stop_admin.py
+script_start_managed: start_managed.py
+script_stop_managed: stop_managed.py
+
+weblogic_admin_user: "{{ domain_account.username }}"
+# weblogic_admin_password: xxxxxxxxxx -this is stored on the vault.yml-
+weblogic_admin_prefix: admin
+
+weblogic_admin_url: "t3://{{ hostvars[groups[weblogic_domain_name + '_' + weblogic_admin_prefix][0]].inventory_hostname }}:{{ weblogic_servers[weblogic_admin_prefix].instance_port }}"
+
+setDomainEnv_sh: "{{ domain_account.home }}/bin/setDomainEnv.sh"
+# oracle_home: /opt/wl12c/weblogic
+
+weblogic_servers: {
+    admin: {
+        instance_name: "{{ weblogic_domain_name }}Admin",
+        instance_address: "{{hostvars[groups[weblogic_domain_name + '_admin'][0]].inventory_hostname}}",
+        instance_port: "{{ unique_id + 10000|int }}",
+        node_manager_address: "{{hostvars[groups[weblogic_domain_name + '_admin'][0]].inventory_hostname}}",
+        node_manager_port: "{{ unique_id + 20000|int }}",
+        user_mem_args_value: "-Djava.security.egd=file:/dev/./urandom -XX:MaxPermSize=512M -Dweblogic.security.SSL.ignoreHostnameVerification=true",
+        machine_name: "{{ weblogic_domain_name }}HostAdmin",
+        file_store: "",
+        jms_server: "",
+    },
+    as01: {
+        instance_name: "{{ weblogic_domain_name }}As01",
+        instance_address: "{{hostvars[groups[weblogic_domain_name + '_as01'][0]].inventory_hostname}}",
+        instance_port: "{{ unique_id + 1|int }}",
+        node_manager_address: "{{hostvars[groups[weblogic_domain_name + '_as01'][0]].inventory_hostname}}",
+        node_manager_port: "{{ unique_id + 20001|int }}",
+        user_mem_args_value: "-Djava.security.egd=file:/dev/./urandom -XX:MaxPermSize=512M",
+        machine_name: "{{ weblogic_domain_name }}HostAs01",
+        file_store: "{{ weblogic_domain_name }}As01FileStore",
+        jms_server: "{{ weblogic_domain_name }}As01JMSServer",
+    },
+    as02: {
+        instance_name: "{{ weblogic_domain_name }}As02",
+        instance_address: "{{hostvars[groups[weblogic_domain_name + '_as02'][0]].inventory_hostname}}",
+        instance_port: "{{ unique_id + 2|int }}",
+        node_manager_address: "{{hostvars[groups[weblogic_domain_name + '_as02'][0]].inventory_hostname}}",
+        node_manager_port: "{{ unique_id + 20002|int }}",
+        user_mem_args_value: "-Djava.security.egd=file:/dev/./urandom -XX:MaxPermSize=512M",
+        machine_name: "{{ weblogic_domain_name }}HostAs02",
+        file_store: "{{ weblogic_domain_name }}As02FileStore",
+        jms_server: "{{ weblogic_domain_name }}As02JMSServer",
+    },
+}
+          
+
+weblogic_app_url: https://sdcdev01stal01ltcrus.blob.core.windows.net/tso/Midtier/Software/weblogic.app/
+weblogic_app_file: weblogic_audit_app.zip   
+weblogic_cluster: "{{ weblogic_domain_name }}Cluster"
+
+weblogic_system_module: 
+   name: "{{ weblogic_domain_name }}SystemModule"
+   descriptor_file_name: "jms/{{ weblogic_domain_name }}systemmodule-jms.xml"      
+   
+weblogic_group: "{{ weblogic_domain_name }}Group"
+
+"system_module_resources": [
+    {
+        name: "{{ weblogic_domain_name }}LogQueue",
+        jndiname: "weblogic.jms.{{ weblogic_domain_name }}LogQueue",
+        AttachJMSXUserId: "",
+        ClientIdPolicy: "",
+        SubscriptionSharingPolicy: "",
+        MessagesMaximum: "",
+        XAConnectionFactoryEnabled: "",
+        DefaultTargetingEnabled: "",
+    },
+    {
+        name: "emailConnectionFactory",
+        jndiname: "common.jms.emailConnectionFactory",
+        AttachJMSXUserId: "false",
+        ClientIdPolicy: "Restricted",
+        SubscriptionSharingPolicy: "Exclusive",
+        MessagesMaximum: "10",
+        XAConnectionFactoryEnabled: "false",
+        DefaultTargetingEnabled: "true",
+    },
+    {
+        name: "emailQueue",
+        jndiname: "common.jms.emailQueue",
+        AttachJMSXUserId: "",
+        ClientIdPolicy: "",
+        SubscriptionSharingPolicy: "",
+        MessagesMaximum: "",
+        XAConnectionFactoryEnabled: "",
+        DefaultTargetingEnabled: "",
+    },
+    {
+        name: "errorLogQueue",
+        jndiname: "weblogic.jms.errorLogQueue",
+        AttachJMSXUserId: "",
+        ClientIdPolicy: "",
+        SubscriptionSharingPolicy: "",
+        MessagesMaximum: "",
+        XAConnectionFactoryEnabled: "",
+        DefaultTargetingEnabled: "",        
+    },
+    {
+        name: "eventLogQueue",
+        jndiname: "weblogic.jms.eventLogQueue",
+        AttachJMSXUserId: "",
+        ClientIdPolicy: "",
+        SubscriptionSharingPolicy: "",
+        MessagesMaximum: "",
+        XAConnectionFactoryEnabled: "",
+        DefaultTargetingEnabled: "",        
+    },
+    {
+        name: "logConnectionFactory",
+        jndiname: "weblogic.jms.logConnectionFactory",
+        AttachJMSXUserId: "false",
+        ClientIdPolicy: "Restricted",
+        SubscriptionSharingPolicy: "Exclusive",
+        MessagesMaximum: "10",
+        XAConnectionFactoryEnabled: "false",
+        DefaultTargetingEnabled: "true",
+    },
+]   
+
+system_data_sources: {
+    a: {
+        name: "CommonDataSource",
+        jndiname: "weblogic.CommonDataSource",
+        url: "jdbc:oracle:thin:@10.77.6.15:1521:RUSD",
+        drivername: "oracle.jdbc.OracleDriver",
+        testtablename: "SQL SELECT 1 FROM DUAL",
+        user: "RUSAUDIT",
+        globaltransactionsprotocol: "None",        
+        password: "Password_1541779102093",
+        config: "{{ domain_account.home }}/Script1541779037320Config",
+        config_url: "https://sdcdev01stal01ltcrus.blob.core.windows.net/tso/Midtier/Software/weblogic.app/Script1541779037320Config",
+        secret: "{{ domain_account.home }}/Script1541779037320Secret",
+        secret_url: "https://sdcdev01stal01ltcrus.blob.core.windows.net/tso/Midtier/Software/weblogic.app/Script1541779037320Secret",
+    },
+    b: {
+        name: "rusCommonXADatasource",
+        jndiname: "rusCommonXADatasource",
+        url: "jdbc:oracle:thin:@10.77.6.15:1521:RUSD",
+        drivername: "oracle.jdbc.OracleDriver",
+        testtablename: "SQL SELECT 1 FROM DUAL",
+        user: "RUSAUDIT",
+        globaltransactionsprotocol: "None",        
+        password: "Password_1541779102093",
+        config: "{{ domain_account.home }}/Script1541779037320Config",
+        config_url: "https://sdcdev01stal01ltcrus.blob.core.windows.net/tso/Midtier/Software/weblogic.app/Script1541779037320Config",
+        secret: "{{ domain_account.home }}/Script1541779037320Secret",
+        secret_url: "https://sdcdev01stal01ltcrus.blob.core.windows.net/tso/Midtier/Software/weblogic.app/Script1541779037320Secret",
+    },
+}
+
+realm_providers: 
+        name: "IPlanetAuthenticator"
+        controlflag: "SUFFICIENT"
+        principal: "cn=Directory Manager"
+        host: "10.77.30.50"
+        port: "3899"
+        groupbasedn: "ou=groups,dc=mto,dc=gov,dc=on,dc=ca"
+        userbasedn: "ou=people,dc=mto,dc=gov,dc=on,dc=ca"
+        credential: "Credential_1542141727680"
+        config: "{{ domain_account.home }}/Script1542141691791Config"
+        config_url: "https://sdcdev01stal01ltcrus.blob.core.windows.net/tso/Midtier/Software/weblogic.app/Script1542141691791Config"
+        secret: "{{ domain_account.home }}/Script1542141691791Secret"
+        secret_url: "https://sdcdev01stal01ltcrus.blob.core.windows.net/tso/Midtier/Software/weblogic.app/Script1542141691791Secret"
+        
+security_general: 
+        nodemanager: "NodeManagerPassword_1543607657937"
+        credential: "Credential_1543607657946"
+        config: "{{ domain_account.home }}/Script1543607577577Config"
+        config_url: "https://sdcdev01stal01ltcrus.blob.core.windows.net/tso/Midtier/Software/weblogic.app/test/Script1543607577577Config"
+        secret: "{{ domain_account.home }}/Script1543607577577Secret"
+        secret_url: "https://sdcdev01stal01ltcrus.blob.core.windows.net/tso/Midtier/Software/weblogic.app/test/Script1543607577577Secret"
+           
+deploy_apps: {
+    a: {
+        name: "auditApp.ear",
+        path: "{{ domain_account.home }}/applications/audit",
+    },
+    b: {
+        name: "auditservice.ear",
+        path: "{{ domain_account.home }}/applications/auditws",
+    },
+}
+
+weblogic_configfiles:
+   url: "https://sdcdev01stal01ltcrus.blob.core.windows.net/tso/Midtier/Software/weblogic.app"
+   file: configfiles.zip
+   

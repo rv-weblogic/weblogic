@@ -1,0 +1,27 @@
+- name: shell module check user name
+  shell: whoami; echo $PATH
+  register: outputwhoami
+- debug: var=outputwhoami.stdout_lines
+
+- name: command module check user name
+  command: whoami
+  register: outputwhoami
+- debug: var=outputwhoami.stdout_lines
+
+- name: command module check $PATH
+  command: echo $PATH
+  register: outputpath
+- debug: var=outputpath.stdout_lines
+
+
+### to be decided: if adding check if apache is running
+
+# only run when apache is running. also mark changed_when to true if start is needed.
+- name: using shell to stop apache
+## not sure why have to put path /usr/sbin/apachectl/ ; before use become: {{ }} ; no path worked fine. after using become, command not found
+  shell:  /usr/sbin/httpd -k stop -f "{{ dest_httpd_conf_dir }}/httpd.conf"
+  environment: "{{ shell_env_vars }}"
+    #LD_LIBRARY_PATH: /opt/wlplugin/lib
+  register: stop_apache
+
+- debug: var=stop_apache.stdout_lines

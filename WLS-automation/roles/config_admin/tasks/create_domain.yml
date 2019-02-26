@@ -1,0 +1,14 @@
+---
+
+- name: Update create-domain.py template
+  template:
+    src: create-domain.py.j2
+    dest: "{{ staging_folder.domain }}/create-domain.py"
+    owner: "{{domain_account.username}}"
+    group: "{{domain_account.group}}"
+    mode: 0774
+
+# sudo can only work with ansible 2.4, removing it might not work  
+- name: Create {{ weblogic_domain_name }} domain offline
+  shell: "sudo {{ weblogic_install.oracle_home }}/oracle_common/common/bin/wlst.sh {{ staging_folder.domain }}/create-domain.py"      
+

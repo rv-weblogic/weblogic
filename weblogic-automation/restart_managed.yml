@@ -1,0 +1,27 @@
+  - hosts: all
+    become: yes
+    gather_facts: no
+
+    roles:
+      - role: ensure_ownership
+
+      - role: copy_instance
+        become_user: "{{ domain_account.username }}"
+
+      - role: node_manager_operations
+        become_user: "{{ domain_account.username }}"
+        vars: 
+            user_mem_args_value: "{{ weblogic_servers[server].user_mem_args_value }}"
+            weblogic_node_manager_address: "{{ weblogic_servers[server].node_manager_address }}"
+            weblogic_node_manager_port: "{{ weblogic_servers[server].node_manager_port }}"
+
+      - role: weblogic_operations
+        become_user: "{{ domain_account.username }}"
+        vars: 
+            weblogic_node_manager_address: "{{ weblogic_servers[server].node_manager_address }}"
+            weblogic_node_manager_port: "{{ weblogic_servers[server].node_manager_port }}"
+            weblogic_instance_name: "{{ weblogic_servers[server].instance_name }}"
+            weblogic_instance_address: "{{ weblogic_servers[server].instance_address }}"
+            weblogic_instance_port: "{{ weblogic_servers[server].instance_port }}"
+            weblogic_instance_admin_address: "{{ weblogic_servers[weblogic_admin_prefix].instance_address }}"
+            weblogic_instance_admin_port: "{{ weblogic_servers[weblogic_admin_prefix].instance_port }}"

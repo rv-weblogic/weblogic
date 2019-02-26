@@ -1,0 +1,22 @@
+---
+
+- include_tasks: sync_data.yml
+  when: task_type | default("") == "sync_data"
+
+- include_tasks: config_managed.yml
+  when: server | regex_search("^as\d+") and task_type | default("") == "config_managed"
+    
+- include_tasks: common_managed.yml
+  when: task_type | default("") == "start_managed" or task_type | default("") == "stop_managed" or task_type | default("") == "restart_managed"
+
+- include_tasks: start_managed.yml
+  when: task_type | default("") == "start_managed"
+
+- include_tasks: stop_managed.yml
+  when: task_type | default("") == "stop_managed"
+
+- block:
+   - include_tasks: stop_managed.yml
+   - include_tasks: start_managed.yml
+  when: task_type | default("") == "restart_managed"  
+  

@@ -1,0 +1,39 @@
+---
+# vars file for apache role
+# vars neither related to app nor related to enviroments (DEV or UAT)
+
+# on Ansible tower server which pulls from VSTS (automation repostitory)
+apache_source_root: files/apache_sourceR2/
+#on target server
+tso_apache_root: /web
+
+# For using common role to create ID start. #??? to be confirmed: This part canNOT be moved to apache/vars/main.yml . it need to overwrite common role's vars
+#app_dir: "{{ tso_apache_root }}/{{ appname_i }}" issue: "msg": "useradd: cannot create directory /web/AUDITIntra/DEVAUDITIntra\n", "name": "DEVAUDITIntra", "rc": 12}
+app_dir: "{{ tso_apache_root }}"
+app_user: "{{ appname_i }}"
+app_user_pwd: mtogov123
+app_group: apache
+# For using common role to create ID end
+
+super_user: root
+
+# For WebLogic Plugin start
+# source_url_WLPlugin_zip: expect WLSPlugin12.2.1.3.0-Apache2.2-Apache2.4-Linux_x86_64-12.2.1.3.0-lib-only.zip contain only one folder lib with all WLplugin lib files inside
+source_url_WLPlugin_zip: https://sdcdev01stal01ltcrus.blob.core.windows.net/tso/Midtier/Software/WebLogic_Plugin/WLSPlugin12.2.1.3.0-Apache2.2-Apache2.4-Linux_x86_64-12.2.1.3.0-lib-only.zip?sp=r&st=2018-08-22T20:39:20Z&se=2118-08-23T04:39:20Z&spr=https&sv=2017-11-09&sig=GRmK2B6yNcv3RLwjZGgKaqFIbFSOeYST6Ho3Mv%2BQE3w%3D&sr=b
+# source_location_WL_Plugin_Lib likely not needed anymore after 20180823 changing to get_url for WL lib
+#source_location_WL_Plugin_Lib: "{{ apache_source_root }}/tso_managed/WebLogic_Plugin/lib/"
+dest_location_WL_Plugin: "{{ tso_apache_root }}/wlplugin/"
+dest_location_WL_Plugin_Lib: "{{ tso_apache_root }}/wlplugin/lib"
+shell_env_vars: 
+  LD_LIBRARY_PATH: "{{ dest_location_WL_Plugin_Lib }}"
+  
+# For WebLogin Plugin end
+  
+# for git check out start
+git_user: bitsvsts
+git_password: mtogov123$$
+git_branch: development
+
+apache_git_repo: https://{{ git_user | urlencode }}:{{ git_password }}@netsdc.visualstudio.com/LTC.RUSSB.Automation/_git/LTC.RUSSB.TSO.Ansible
+apache_git_head: "{{ git_branch }}"
+# for git check out end

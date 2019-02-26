@@ -1,0 +1,35 @@
+---
+# tasks file for apache_wlplugin
+- include_tasks: install_apache_binary.yml
+  when: install_apache_binary | default(False) == True
+  
+- include_tasks: prepare_WebLogic_plugin_binary.yml
+  when:  prepare_WebLogic_plugin_binary | default(False) == True
+
+- include_tasks: put_content_in_staging.yml
+  when: put_content_in_staging | default(False) == True
+
+  
+- include_tasks: remove_then_add_static_content.yml
+  when:  remove_then_add_static_content | default(False) == True
+
+- include_tasks: httpd_conf_files.yml
+  when: httpd_conf_files | default(False) == True
+  
+- include_tasks: start_apache.yml
+  when: start_apache | default(False) == True
+  
+- include_tasks: stop_apache.yml
+  when: stop_apache | default(False) == True
+
+- include_tasks: remove_app_home.yml
+  when: remove_app_home | default(False) == True
+
+- include_tasks: uninstall_apache.yml
+  when: uninstall_apache | default(False) == True
+  
+- include_tasks: remove_tso_apache_root.yml
+  when: remove_tso_apache_root | default(False) == True
+
+- include_tasks: update_etc_hosts_for_wl_cluster_members.yml
+  when: update_etc_hosts_for_wl_cluster_members | default(False) == True

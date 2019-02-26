@@ -1,0 +1,67 @@
+---
+# vars file for common
+super_user: root
+app_group: tso
+
+app_user: appbip1
+app_user_pwd: "{{_some_app_user_pwd}}"
+
+vg_name: tsovg
+lv_name: tsolv
+size_of_lvm: 512
+
+filesystem_type: ext4
+physical_disk: /dev/sda2
+
+app_dir: /bipapp_01
+
+ip_addr_only: "{{ ansible_default_ipv4.address }}"
+host_name: "{{ ansible_hostname }}"
+
+rhel_7:  
+  - xorg-x11-apps
+  - telnet-0.17-64.el7.x86_64 
+  - xorg-x11-server-Xorg 
+  - xorg-x11-xauth
+  - xorg-x11-utils-7.5-22.el7.x86_64 
+  - glibc.i686 
+  - glibc-devel.i686 
+  - libXext.i686 
+  - libXrender.i686 
+  - libXtst.i686 
+  - gcc-4.8.5-16.el7_4.1.x86_64 
+  - libaio.i686 
+  - libaio-devel.i686 
+  - libstdc++-4.8.5-16.el7_4.1.i686 
+  - elfutils-libelf-devel.i686 
+  - libstdc++-devel.i686 
+  - gcc-c++-4.8.5-16.el7_4.1.x86_64  
+  - ksh-20120801-34.el7.x86_64 
+  - gtk2-2.24.31-1.el7.i686  
+  - gtk2-2.24.31-1.el7.x86_64 
+  - compat-libstdc++-33
+  - git
+  
+rhel_6: 
+  - xorg-x11-apps
+  - xorg-x11-server-Xorg
+  - xorg-x11-utils-7.5-14.el6.x86_64
+  - xorg-x11-xauth
+  - xorg-x11-server-common
+  - xorg-x11-drv-evdev
+  - xorg-x11-drv-vesa
+  - xorg-x11-xkb-utils
+  - xorg-x11-drv-void
+  - gtk2-2.24.23-8.el6.x86_64
+  - libXtst       
+  - liberation-sans-fonts 
+  - elfutils-libelf-devel.i686
+  - libstdc++-devel.i686
+  - compat-libstdc++-33
+  - libaio-devel.i686  
+  - ksh.x86_64
+  - compat-libstdc++-33.i686
+  - openmotif
+  - compat-libcap1
+  - compat-db
+  - git

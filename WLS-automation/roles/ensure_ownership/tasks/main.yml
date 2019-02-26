@@ -1,0 +1,69 @@
+---
+
+- name:   Expect correct file ownership {{weblogic_install.oracle_home}}
+  file:
+    path:  "{{weblogic_install.oracle_home}}"
+    owner: "{{weblogic_account.username}}"
+    group: "{{weblogic_account.group}}"
+    mode:  0774 
+    recurse: true 
+
+- name: Expect correct file ownership {{ name_prefix }}
+  file:
+    path: "{{ domain_account.home }}"
+    owner: "{{ domain_account.uid }}"
+    group: "{{ domain_account.gid }}"
+    mode: 0774
+    recurse: true
+    
+- name: Check ssh
+  stat:
+    path: "{{ domain_account.home }}/.ssh/"
+  register: check_ssh
+    
+- block: 
+    - name: Check id_rsa
+      stat:
+        path: "{{ domain_account.home }}/.ssh/id_rsa"
+      register: check_id_rsa
+    - name: Fix id_rsa
+      file:
+        path: "{{ domain_account.home }}/.ssh/id_rsa"
+        owner: "{{ domain_account.uid }}"
+        group: "{{ domain_account.gid }}"
+        mode: 0600
+      when: check_id_rsa.stat.exists == true
+    - name: Check id_rsa.pub
+      stat:
+        path: "{{ domain_account.home }}/.ssh/id_rsa.pub"
+      register: check_id_rsa_pub  
+    - name: Fix id_rsa.pub
+      file:
+        path: "{{ domain_account.home }}/.ssh/id_rsa.pub"
+        owner: "{{ domain_account.uid }}"
+        group: "{{ domain_account.gid }}"
+        mode: 0644
+      when: check_id_rsa_pub.stat.exists == true  
+    - name: Check known_hosts
+      stat:
+        path: "{{ domain_account.home }}/.ssh/known_hosts"
+      register: known_hosts 
+    - name: Fix known_hosts
+      file:
+        path: "{{ domain_account.home }}/.ssh/known_hosts"
+        owner: "{{ domain_account.uid }}"
+        group: "{{ domain_account.gid }}"
+        mode: 0644
+      when: known_hosts.stat.exists == true  
+    - name: Check authorized_keys
+      stat:
+        path: "{{ domain_account.home }}/.ssh/authorized_keys"
+      register: authorized_keys 
+    - name: Fix authorized_keys
+      file:
+        path: "{{ domain_account.home }}/.ssh/authorized_keys"
+        owner: "{{ domain_account.uid }}"
+        group: "{{ domain_account.gid }}"
+        mode: 0644
+      when: authorized_keys.stat.exists == true
+  when: check_ssh.stat.exists == true

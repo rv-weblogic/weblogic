@@ -1,0 +1,165 @@
+---
+- name: variable precedence test
+  hosts: "{{ webservers }}"
+  tasks:
+    - include_vars:
+        file: "{{ item }}"
+      with_items:
+        # hope to move to vars/main.yml under the role # 
+        #- "group_vars/all/all_apache_wlplugin.yml"
+        #- "group_vars/{{ env }}/vault.yml" # likely will use "group_vars/{{ app_name }}/{{ env_dtup }}/vault.yml"
+        #- "group_vars/{{ env }}/vars.yml" # likely will use "group_vars/{{ app_name }}/{{ env_dtup }}/vars.yml"
+        - roles/apache/vars/main.yml
+        - "group_vars/{{ appname_i }}/{{ env_dtup }}/vars.yml"
+  tags: always
+ 
+- name: install apache and wlplugin binary ( This includes make sure /web exits. )
+  hosts: "{{ webservers }}"
+  become_user: "{{super_user}}"
+  any_errors_fatal: True
+  roles:
+    - apache
+  vars: 
+    install_apache_binary: True
+  tags: 
+    - build_end_to_end
+
+- name: update_etc_hosts_for_wl_cluster_members
+  hosts: "{{ webservers }}"
+  become_user: "{{super_user}}"
+  any_errors_fatal: True
+  roles:
+    - apache
+  vars: 
+    update_etc_hosts_for_wl_cluster_members: True
+  tags: 
+    - build_end_to_end
+    - update_etc_hosts_for_wl_cluster_members
+
+
+#this step will likely to be moved before install apache and wlplugin binary later (for now it needs /web to be created first)     
+- name: prepare app ID
+  hosts: "{{ webservers }}"
+  become_user: "{{super_user}}"
+  any_errors_fatal: True
+  roles:
+    - common
+  vars: 
+    app_user_create: True
+  tags: 
+    - build_end_to_end
+    
+- name: Prepare wlplugin binary and LD_LIBRARY_PATH
+  hosts: "{{ webservers }}"
+  become_user: "{{app_user}}"
+  any_errors_fatal: True
+  roles:
+    - apache
+  vars: 
+    prepare_WebLogic_plugin_binary: True
+  tags: 
+    - build_end_to_end
+    - wlplugin_only
+     
+- name: put_content_in_staging
+  hosts: "{{ webservers }}"
+  become_user: "{{ app_user }}"
+  #become_user: "{{super_user}}"
+  any_errors_fatal: True
+  roles:
+    - apache
+  vars: 
+    put_content_in_staging: True
+  tags: 
+    - build_end_to_end
+
+- name: setup app static content
+  hosts: "{{ webservers }}"
+  #become: yes 
+  become_user: "{{ app_user }}"
+  #become_user: "{{super_user}}"
+  any_errors_fatal: True
+  roles:
+    - apache
+  vars: 
+    remove_then_add_static_content: True
+  tags: 
+    - build_end_to_end
+
+- name: setup httpd conf related file(s)
+  hosts: "{{ webservers }}"
+  #become: yes
+  become_user: "{{ app_user }}"
+  ###become_user: "{{super_user}}"
+  any_errors_fatal: True
+  roles:
+    - apache
+  vars: 
+    httpd_conf_files: True
+  tags: 
+    - build_end_to_end
+        
+# may change to trigger later
+- name: stop apache
+  hosts: "{{ webservers }}"
+  #become: yes
+  become_user: "{{ app_user }}"
+  ###become_user: "{{super_user}}"
+  #any_errors_fatal: True
+  roles:
+    - apache
+  vars: 
+    stop_apache: True
+  tags: 
+    - build_end_to_end
+    - stop_apache
+
+# may change to trigger later
+- name: start apache
+  hosts: "{{ webservers }}"
+  become_user: "{{ app_user }}"
+  roles:
+    - apache
+  vars: 
+    start_apache: True
+  tags: 
+    - build_end_to_end
+    - start_apache
+    
+- name: remove app home
+  hosts: "{{ webservers }}"
+  become_user: "{{ app_user }}"
+  roles:
+    - apache
+  vars: 
+    remove_app_home: True
+  tags: 
+    - remove_app_home
+    - clean_up
+  ignore_errors: true
+  
+  
+- name: remove tso_apache_root
+  hosts: "{{ webservers }}"
+  become_user: "{{ super_user }}"
+  roles:
+    - apache
+  vars: 
+    remove_tso_apache_root: True
+  tags: 
+    - remove tso_apache_root
+    - clean_up
+  ignore_errors: true
+  
+- name: uninstall_apache
+  hosts: "{{ webservers }}"
+  become_user: "{{ super_user }}"
+  roles:
+    - apache
+  vars: 
+    uninstall_apache: True
+  tags: 
+    - uninstall_apache
+    - clean_up
+  ignore_errors: true
+  

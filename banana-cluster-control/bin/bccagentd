@@ -1,0 +1,13 @@
+#!/bin/env python
+'''
+Banana Cluster Control Agent Daemon
+'''
+import sys, os
+
+if __name__ == '__main__':
+    str_abs_basedir = os.path.dirname(os.path.realpath(__file__))
+    str_abs_rootdir = os.path.dirname(str_abs_basedir)
+    sys.path.insert(0, str_abs_rootdir)
+
+    from lib.bccagentd import bccagentd
+    bccagentd.main()

@@ -1,0 +1,30 @@
+---
+
+- name: Expect the presence of the {{ script_stop_managed }} script
+  template: 
+      src: "{{ script_stop_managed }}"
+      dest: "{{ domain_account.home }}/{{ script_stop_managed }}"
+
+- name: Discover {{ weblogic_servers[server].instance_name }} running state
+  register: managed_listening
+  failed_when: no
+  wait_for:
+      host: "{{ weblogic_servers[server].instance_address }}"
+      port: "{{ weblogic_servers[server].instance_port }}"
+      state: started
+      timeout: 2
+      
+- name: Expect {{ weblogic_servers[server].instance_name }} to stop running
+  when:  managed_listening.state is defined and managed_listening.state == "started"
+  register: managed_stop
+  shell: "{{ weblogic_install.oracle_home }}/wlserver/common/bin/wlst.sh {{ script_stop_managed }}"
+  args:
+      chdir: "{{ domain_account.home }}"
+
+- name: Expect {{ weblogic_instance_name }} to stop listening
+  when: managed_stop.changed
+  wait_for:
+      host: "{{ weblogic_servers[server].instance_address }}"
+      port: "{{ weblogic_servers[server].instance_port }}"
+      state: stopped
+      timeout: "{{ timeout.managed }}"

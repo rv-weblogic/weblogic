@@ -1,0 +1,9 @@
+#!/bin/env python
+'''
+Node Manager Daemon Init Control
+'''
+
+from lib.nm import nm
+
+if __name__ == '__main__':
+    nm.main()

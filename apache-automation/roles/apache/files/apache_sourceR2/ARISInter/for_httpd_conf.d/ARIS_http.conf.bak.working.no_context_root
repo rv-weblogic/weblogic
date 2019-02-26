@@ -1,0 +1,10 @@
+#for Weblogic plugin
+LoadModule weblogic_module /opt/wlplugin/lib/mod_wl_24.so
+LoadModule log_debug_module modules/mod_log_debug.so
+
+
+ WebLogicCluster etcdqpvsapwlg01.cihs.gov.on.ca:7130,etcdqpvsapwlg03.cihs.gov.on.ca:7130
+ MatchExpression */cbtContent/*
+ MatchExpression *.jsp
+ MatchExpression *.do
+ MatchExpression *.wlforward

@@ -1,0 +1,42 @@
+---
+- name: Creates directory for Application
+  file: path={{app_dir}} state=directory
+  when: create_lvm | default(False) == True or
+        create_full_filesystem | default(False) == True
+
+- name: Create Physical Volume
+  lvg: vg={{vg_name}} pvs={{physical_disk}} pesize=32
+  when: create_lvm | default(False) == True
+
+- name: Create a logical volume
+  lvol:
+    vg: "{{vg_name}}"
+    lv: "{{lv_name}}"
+    size: "{{size_of_lvm}}"
+  when: create_lvm | default(False) == True
+  
+- name: Create partition on the raw disk
+  parted: device={{physical_disk_raw}} number=1 state=present
+  when: create_full_filesystem | default(False) == True
+
+- name: create file system with full disks
+  filesystem: 
+    fstype: "{{filesystem_type}}"
+    dev: "{{physical_disk}}"
+  when: create_full_filesystem | default(False) == True
+
+- name: Mount disk on full file system
+  mount: 
+    fstype: "{{filesystem_type}}"
+    src: "{{physical_disk}}"
+    path: "{{app_dir}}"
+    state: mounted
+  when:  create_full_filesystem | default(False) == True
+  
+- name: Mount disk on LVM file system
+  mount: 
+    fstype: "{{filesystem_type}}"
+    src: "{{lv_name}}"
+    path: "{{app_dir}}"
+    state: mounted
+  when:  create_lvm | default(False) == True

@@ -1,0 +1,10 @@
+#for Weblogic plugin
+LoadModule weblogic_module /web/wlplugin/lib/mod_wl_24.so
+
+WebLogicCluster {{ WebLogicCluster }}
+MatchExpression */auditws/AuditWebService*
+MatchExpression *.jsp
+MatchExpression *.do
+MatchExpression *.wlforward
+MatchExpression */j_security_check*
+

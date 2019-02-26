@@ -1,0 +1,8 @@
+[ij_admin] 
+sdcgisazapmdw22 ansible_host=10.193.176.60
+
+[ij_as01] 
+sdcgisazapmdw22 ansible_host=10.193.176.60
+
+[ij_as02] 
+sdcgisazapmdw23 ansible_host=10.193.176.61

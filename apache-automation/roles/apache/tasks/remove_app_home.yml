@@ -1,0 +1,8 @@
+- include_tasks: stop_apache.yml
+
+- name: remove app home like /web/DEV/AUDITIntra/
+  # dest_app_static_content_unzipped_final is like: /var/www/html/edtW 
+  file:
+    path: "{{ tso_apache_root }}/{{ env_dtup }}/{{ appname_i }}"
+    state: absent
+ 

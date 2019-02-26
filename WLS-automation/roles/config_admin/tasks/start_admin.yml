@@ -1,0 +1,56 @@
+---     
+              
+- name: create folder servers/{{ weblogic_servers[server].instance_name }}/security/
+  file: 
+    path: "{{ domain_account.home }}/servers/{{ weblogic_servers[server].instance_name }}/security/"
+    state: directory
+    owner: "{{domain_account.username}}"
+    group: "{{domain_account.group}}"
+    mode: 0774
+    
+- name: Create boot.properties
+  template:
+    src: boot.properties.j2
+    dest: "{{ domain_account.home }}/servers/{{ weblogic_servers[server].instance_name }}/security/boot.properties"
+    owner: "{{domain_account.username}}"
+    group: "{{domain_account.group}}"
+    mode: 0774              
+ 
+- name: Expect the presence of the {{ script_start_admin }} script
+  template: 
+      src: "{{ script_start_admin }}"
+      dest: "{{ domain_account.home }}/{{ script_start_admin }}"
+      
+- name: Expect {{  weblogic_servers[server].instance_name }} to not be listening
+  register: admin_listening
+  failed_when: no
+  wait_for:
+      host: "{{  weblogic_servers[server].instance_address }}"
+      port: "{{  weblogic_servers[server].instance_port }}"
+      state: stopped
+      timeout: 2
+            
+- name: Execute {{ weblogic_install.oracle_home }}/wlserver/common/bin/wlst.sh {{ script_start_admin }}
+  when: admin_listening.state is defined and admin_listening.state == "stopped"
+  register: admin_start
+  shell: "{{ weblogic_install.oracle_home }}/wlserver/common/bin/wlst.sh {{ script_start_admin }}"
+  args:
+      executable: /bin/bash
+      chdir: "{{ domain_account.home }}"
+  when: start_old | default("") == ""     
+      
+- name: Execute {{ domain_account.home }}/bin/startWebLogic.sh
+  shell: "nohup {{ domain_account.home }}/bin/startWebLogic.sh </dev/null >/dev/null 2>&1 &" 
+  register: admin_start
+  when: start_old | default("") == "Y"
+     
+- name: Expected {{ weblogic_servers[server].instance_address }} to be listening on {{ weblogic_servers[server].instance_port }}
+  wait_for:
+      host: "{{ weblogic_servers[server].instance_address }}"
+      port: "{{ weblogic_servers[server].instance_port }}"
+      state: started
+      timeout: "{{ timeout.admin }}"   
+      
+      
+      
+      

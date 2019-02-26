@@ -1,0 +1,12 @@
+---
+- name: add IP wl_server1_host name sae_env_01 to /etc/hosts
+  lineinfile: 
+    path: /etc/hosts
+    line: "{{ wl_server1_host_line_in_hosts_file }}"
+    backup: yes
+    
+- name: add IP wl_server2_host name sae_env_02 to /etc/hosts
+  lineinfile: 
+    path: /etc/hosts
+    line: "{{ wl_server2_host_line_in_hosts_file }}"
+    backup: yes

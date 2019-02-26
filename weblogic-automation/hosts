@@ -1,0 +1,5 @@
+[audit]
+audit_admin ansible_host=saedev01 ansible_port=22 ansible_user=rundeck
+audit_as01 ansible_host=saedev01 ansible_port=22 ansible_user=rundeck
+audit_as02 ansible_host=saedev02 ansible_port=22 ansible_user=rundeck
+

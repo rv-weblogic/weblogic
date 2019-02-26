@@ -1,0 +1,9 @@
+#!/bin/env python
+'''
+Node Manager Daemon Init Control
+'''
+
+from lib.bccnm import bccnm
+
+if __name__ == '__main__':
+    bccnm.main()

@@ -1,0 +1,17 @@
+
+  - name: Create staging directory
+    file: 
+        state: directory 
+        path: "{{ staging_folder.domain }}"
+
+  - name: Copy weblogic automata binary
+    copy: 
+        src: "{{ weblogic_automata_binary }}"
+        dest: "{{ staging_folder.domain }}"
+        mode: 0755
+        
+  - name: Compile and copy {{ weblogic_domain_name }}.json template
+    template: 
+        src: "{{ weblogic_domain_name }}.json"
+        dest: "{{ staging_folder.domain }}/{{ weblogic_domain_name }}.json"
+        

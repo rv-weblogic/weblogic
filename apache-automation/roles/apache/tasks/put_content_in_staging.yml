@@ -1,0 +1,49 @@
+- file:
+    path: '{{ item }}'
+    state: directory
+    mode: 0755
+  with_items:
+    - "{{ dest_app_static_content_zip_dir }}"
+
+
+
+# to be removed simulate harvest checkout by just coping file; likely this will be replace by harvest checkout scripts
+#- name: copy .zip from local to Apache
+#  copy: 
+#    # #hard code example: src: /etc/ansible/apache_source/ApacheARIS_Inter/arisWebW_StaticContent.zip
+#    src: "{{ src_app_static_content_zip_dir }}/{{ app_static_content_zip_file }}"
+#    #hard code example: dest: /apache/staging/ARISInter/
+#    dest: "{{ dest_app_static_content_zip_dir }}"
+
+- name: Create temporary staging directory for git
+  register: temp_dir
+  tempfile:
+    state: directory
+    # if no path, it will be likely be put under /tmp, which may not have enough space
+    path: "{{ tso_apache_root }}"
+
+- name: Get the code from VSTS with git
+  git:
+    repo: "{{ apache_git_repo }}"
+    version: "{{ apache_git_head }}"
+    dest: "{{ temp_dir.path }}"
+
+# simulate harvest checkout by just coping file; likely this will be replace by harvest checkout scripts
+- name: copy .zip from git temp location to staging
+  copy: 
+    # #hard code example: src: /etc/ansible/apache_source/ApacheARIS_Inter/arisWebW_StaticContent.zip
+    #src: "{{ src_app_static_content_zip_dir }}/{{ app_static_content_zip_file }}"
+    src: "{{ temp_dir.path }}/{{ app_path_on_repo }}/{{ app_static_content_zip_file }}"
+
+#####end-rashid##############
+
+    #hard code example: dest: /apache/staging/ARISInter/
+    dest: "{{ dest_app_static_content_zip_dir }}"
+    remote_src: yes
+
+- name: Delete temporary staging directory
+  file:
+    state: absent
+    path: "{{ temp_dir.path }}"
+    
+

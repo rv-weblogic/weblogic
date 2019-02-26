@@ -1,0 +1,33 @@
+- name: check user name
+  shell: whoami
+  register: outputwhoami
+- debug: var=outputwhoami.stdout_lines
+
+- name: install apache (and unzip etc)
+  yum: name={{ item }} state=present
+  with_items:
+    - httpd
+    - mod_ssl
+    - unzip
+    # as 201807, git is used to get static content
+    - git
+    #used by plugin
+    - libaio
+    #used by common role
+    - selinux-policy.noarch
+    - libselinux-python
+
+- name: create top dir like /web for contaning web server related contents
+  file: 
+    path: '{{ tso_apache_root }}'
+    group: "{{ app_group }}"
+    state: directory
+    mode: 0775
+
+# mainly for change permission to add group write, so none root can write to it.
+- file:
+    path: '{{ item }}'
+    state: directory
+    mode: 0770
+  with_items:
+    - /run/httpd

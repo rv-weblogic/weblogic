@@ -1,0 +1,9 @@
+#!/bin/env python
+'''
+Banana Cluster Control Agent Daemon Init Control
+'''
+
+from lib.bccagent import bccagent
+
+if __name__ == '__main__':
+    bccagent.main()

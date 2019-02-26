@@ -1,0 +1,37 @@
+  - name: Expect the presence of config.xml 
+    tags: always
+    register: domain_exist
+    stat: 
+        path: "{{ domain_config_xml }}"
+
+  - block:
+      - name: Discover the Admin host key
+        register: admin_host_key
+        command: /usr/bin/ssh-keyscan -p {{ hostvars[name_prefix + '_admin'].ansible_port }} -t ecdsa {{ hostvars[name_prefix + '_admin'].ansible_host }}
+        changed_when: false
+
+      - name: Expect the presence of ~/.ssh/known_hosts
+        register: touch_known_hosts
+        changed_when:  touch_known_hosts.diff.before.state != "file"
+        file:
+            path: ~/.ssh/known_hosts
+            state: touch
+
+      - name: Expect the presence of Admin host key
+        lineinfile:
+            path: ~/.ssh/known_hosts
+            state: present
+            regexp: '^\[{{ hostvars[name_prefix + "_admin"].ansible_host }}\]\:{{ hostvars[name_prefix + "_admin"].ansible_port }}'
+            line: '{{ admin_host_key.stdout }}'
+
+      - name: Copy apps data from Admin host
+        command: |
+            /usr/bin/rsync -avz \
+                {{ domain_account.username }}@{{ hostvars[name_prefix + '_admin'].ansible_host }}:"{{ domain_account.home }}"/ \
+                "{{ domain_account.home }}"
+        # command: |
+            # /usr/bin/rsync -az -e "ssh -p {{ hostvars[name_prefix + '_admin'].ansible_port }}" \
+                # {{ hostvars[name_prefix + '_admin'].ansible_user }}@{{ hostvars[name_prefix + '_admin'].ansible_host }}:"{{ domain_account.home }}"/ \
+                # "{{ domain_account.home }}"
+    when: not domain_exist.stat.exists
+    tags: always

@@ -1,0 +1,8 @@
+  - name: Clean the {{ domain_account.home }} directory
+    shell: rm -rf *
+    args:
+        chdir: "{{ domain_account.home }}"
+
+  - name: Kill all java process
+    shell: pkill -9 java
+    failed_when: no

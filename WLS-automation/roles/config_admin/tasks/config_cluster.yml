@@ -1,0 +1,23 @@
+---   
+  
+- name: Expect {{ weblogic_servers['admin'].instance_name }} to be listening
+  wait_for:
+      host: "{{ weblogic_servers['admin'].instance_address }}"
+      port: "{{ weblogic_servers['admin'].instance_port }}"
+      state: started
+      timeout: "{{ timeout.admin }}"      
+  register: admin_listen
+ 
+- block:    
+    - name: Update config_cluster.py template 
+      template:
+        src: config_cluster.py.j2
+        dest: "{{ staging_folder.domain }}/config_cluster.py"
+        owner: "{{ domain_account.username }}"
+        group: "{{ domain_account.group }}"
+        mode: 0774              
+    - name: Configure {{ weblogic_cluster }} 
+      shell: "{{ weblogic_install.oracle_home }}/oracle_common/common/bin/wlst.sh {{ staging_folder.domain }}/config_cluster.py"
+  when: admin_listen.state == 'started'
+  
+  

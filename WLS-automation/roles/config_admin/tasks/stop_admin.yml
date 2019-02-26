@@ -1,0 +1,33 @@
+---
+ 
+- name: Expect the presence of the {{ script_stop_admin }} script
+  template: 
+      src: "{{ script_stop_admin }}"
+      dest: "{{ domain_account.home }}/{{ script_stop_admin }}"
+
+- name: Expect {{ weblogic_servers[server].instance_name }} to be listening
+  register: admin_listening
+  failed_when: no
+  wait_for:
+      host: "{{ weblogic_servers[server].instance_address }}"
+      port: "{{ weblogic_servers[server].instance_port }}"
+      state: started
+      timeout: 2
+      
+- name: Execute {{ weblogic_install.oracle_home }}/wlserver/common/bin/wlst.sh {{ script_stop_admin }}
+  when:  admin_listening.state is defined and admin_listening.state == "started"
+  shell: "{{ weblogic_install.oracle_home }}/wlserver/common/bin/wlst.sh {{ script_stop_admin }}"
+  args:
+      chdir: "{{ domain_account.home }}"
+  when: stop_old | default("") == ""
+  
+- name: Execute {{ domain_account.home }}/bin/stopWebLogic.sh
+  shell: "nohup {{ domain_account.home }}/bin/stopWebLogic.sh </dev/null >/dev/null 2>&1 &" 
+  when: stop_old | default("") == "Y"    
+
+- name: Expect {{ weblogic_servers[server].instance_name }} to stop listening
+  wait_for:
+      host: "{{ weblogic_servers[server].instance_address }}"
+      port: "{{ weblogic_servers[server].instance_port }}"
+      state: stopped
+      timeout: "{{ timeout.admin }}" 

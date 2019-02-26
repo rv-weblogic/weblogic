@@ -1,0 +1,4 @@
+generic.build.info.time=2014-11-27 10:56:10
+generic.build.info.env=dev
+generic.build.info.version=1.0.0 
+generic.build.info.system=auditservice
